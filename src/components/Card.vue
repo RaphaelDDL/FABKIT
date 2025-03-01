@@ -29,6 +29,7 @@ const cardTextImage = new Konva.Image(
       x: 55,
       y: 408,
       draggable: false,
+      name: 'card-text-image',
     }
 );
 
@@ -54,7 +55,10 @@ onMounted(() => {
 const downloadImage = function () {
   cardTextImage.image('');
   // convert DOM into image
-  html2canvas(containerElement.value, {
+  html2canvas(document.querySelector('#renderedCardText'), {
+    scale: 1,
+    width: 345,
+    height: 135,
     backgroundColor: 'rgba(0,0,0,0)',
   }).then((canvas) => {
     // show it inside Konva.Image
