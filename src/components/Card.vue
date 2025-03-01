@@ -174,7 +174,7 @@ const switchBackground = function (dir) {
 
     <div class="cardParent">
       <div id="renderedCardText" ref="containerElement">
-        <div id="renderedContent" ref="contentElement" v-html="fields.cardText"></div>
+        <div id="renderedContent" ref="contentElement" v-html="fields.cardText" style="font-family: 'Palatino LT Std Light', serif;"></div>
       </div>
       <v-stage
           ref="stage"
