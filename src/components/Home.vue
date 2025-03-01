@@ -7,6 +7,7 @@ import {useFields} from "../helpers/fields.js";
 import Card from "./Card.vue";
 import {TrashIcon} from "@heroicons/vue/24/solid/index.js";
 import Editor from '@tinymce/tinymce-vue'
+import {RadioGroup, RadioGroupOption} from "@headlessui/vue";
 
 
 const types = useTypes();
@@ -554,22 +555,17 @@ const tinyMCEConfig = {
               </template>
             </div>
             <div v-if="isFieldShown('cardWeapon1h') && isFieldShown('cardWeapon2h')" class="">
-              <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardWeapon1h">1h</label>
-              <div class="mt-2">
-                <div
-                    class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardWeapon1h" v-model="fields.cardWeapon1h" checked class="form-check-input"
-                         name="cardWeaponHand" type="radio" value="(1H)">
-                </div>
-              </div>
-              <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardWeapon2h">2h</label>
-              <div class="mt-2">
-                <div
-                    class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardWeapon2h" v-model="fields.cardWeapon2h" class="form-check-input" name="cardWeaponHand"
-                         type="radio" value="(2H)">
-                </div>
-              </div>
+              <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardWeapon1h">1H or 2H?</label>
+              <fieldset aria-label="Choose a memory option">
+                <RadioGroup v-model="fields.cardWeapon2h" class="mt-2 grid grid-cols-3 gap-3 sm:grid-cols-6">
+                  <RadioGroupOption as="template"  value="1h" v-slot="{ active, checked }">
+                    <div class="cursor-pointer focus:outline-hidden" :class="[active ? 'ring-2 bg-primary ring-offset-2' : '', checked ? 'bg-primary text-white ring-0 hover:bg-primary' : 'bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50', !active && !checked ? 'ring-inset' : '', active && checked ? 'ring-2' : '', 'flex items-center justify-center rounded-md px-3 py-3 text-sm font-semibold uppercase sm:flex-1']">1h</div>
+                  </RadioGroupOption>
+                  <RadioGroupOption as="template" value="2h" v-slot="{ active, checked }">
+                    <div class="cursor-pointer focus:outline-hidden" :class="[active ? 'ring-2 bg-primary ring-offset-2' : '', checked ? 'bg-primary text-white ring-0 hover:bg-primary' : 'bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50', !active && !checked ? 'ring-inset' : '', active && checked ? 'ring-2' : '', 'flex items-center justify-center rounded-md px-3 py-3 text-sm font-semibold uppercase sm:flex-1']">2h</div>
+                  </RadioGroupOption>
+                </RadioGroup>
+              </fieldset>
             </div>
             <div v-if="isFieldShown('cardRarity')" class="">
               <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardRarity">Rarity</label>
