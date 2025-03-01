@@ -1,0 +1,41 @@
+import {reactive} from "vue";
+const fields = reactive({
+    cardType: '',
+    cardPitch: '',
+    cardName: '',
+    cardCost: '',
+    cardText: '',
+    cardPower: '',
+    cardHeroIntellect: '',
+    cardTalent: '',
+    cardTalentCustom: '',
+    cardClass: '',
+    cardClassCustom: '',
+    cardSecondaryClass: '',
+    cardSecondaryClassCustom: '',
+    cardActionSubtype: '',
+    cardActionSubtypeCustom: '',
+    cardDefenseReactionSubtype: '',
+    cardDefenseReactionSubtypeCustom: '',
+    cardEquipmentSubtype: '',
+    cardEquipmentSubtypeCustom: '',
+    cardInstantSubtype: '',
+    cardInstantSubtypeCustom: '',
+    cardResourceSubtype: '',
+    cardResourceSubtypeCustom: '',
+    cardMacroGroup: '',
+    cardHeroSubtype: '',
+    cardWeaponSubtype: '',
+    cardWeaponSubtypeCustom: '',
+    cardWeapon1h: '',
+    cardWeapon2h: '',
+    cardRarity: '',
+    cardTokenSubtype: '',
+    cardDefense: '',
+    cardLife: '',
+    cardUploadedArtwork: '',
+})
+
+export function useFields() {
+    return fields;
+}

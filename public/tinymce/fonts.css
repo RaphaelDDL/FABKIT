@@ -1,0 +1,9 @@
+@font-face {
+    font-family: 'Amanda Std Regular';
+    src: url('/fonts/Amanda Std Regular.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Palatino LT Std Light';
+    src: url('/fonts/Palatino LT Std Light.otf') format('opentype');
+}
