@@ -99,7 +99,7 @@ const Card = class Card {
             subtype = ' - ' + subtype;
         }
         if (this.type === 'weapon') {
-            subtype += this.weapon;
+            subtype += ' ' + this.weapon;
         }
 
         let type = this.capitalizeFirstLetter(this.type).split('_').map((word) => this.capitalizeFirstLetter(word)).join(' ');
