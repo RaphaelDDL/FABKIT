@@ -1,0 +1,19 @@
+import {defineConfig} from 'vite'
+import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
+import backgrounds from "./vite_generate_backgrounds.js";
+import fs from 'fs';
+
+fs.writeFileSync('./src/config/backgrounds.js', backgrounds);
+
+// https://vitejs.dev/config/
+export default defineConfig({
+    plugins: [
+        tailwindcss(),
+        vue()
+    ],
+    server: {
+        port: 8080,
+        hot: true,
+    }
+});
