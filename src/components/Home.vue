@@ -231,6 +231,7 @@ const tinyMCEConfig = {
                 <select
                     id="cardClass"
                     v-model="fields.cardClass"
+                    @change="!fields.cardClass ? fields.cardSecondaryClass = '' : ''"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Adjudicator">Adjudicator</option>
