@@ -181,7 +181,7 @@ const switchBackground = function (dir) {
         <v-layer id="text" ref="text"></v-layer>
         <v-layer id="footer" ref="footer"></v-layer>
         <v-layer id="footertext" ref="footertext">
-          <v-text text="FABKIT - NOT TOURNAMENT LEGAL - FaB TCG by © LSS" :x="142" :y="597.9" :width="182" :height="12" fontFamily="Dialog Cond Semibold Regular" :fontSize="9.3" verticalAlign="top" fill="white"></v-text>
+          <v-text text="FABKIT - NOT TOURNAMENT LEGAL - FaB TCG by © LSS" :x="142" :y="597.9" :width="182" :height="12" fontFamily="Dialog Cond Semibold Regular" :fontSize="9.2" verticalAlign="top" fill="white"></v-text>
         </v-layer>
       </v-stage>
     </div>
