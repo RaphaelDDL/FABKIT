@@ -156,13 +156,13 @@ const switchBackground = function (dir) {
   <div>
     <label class="block text-sm/6 font-medium text-gray-900 dark:text-white text-center" for="cardBackLabel">Select Card Background</label>
     <div v-if="fields.cardType" class="w-full flex justify-between items-center mt-2 mb-4 col-start-2">
-      <button :disabled="loadingBackground" class="inline-flex items-center gap-x-1.5 rounded-md bg-primary px-2.5 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-primary-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button"
+      <button :disabled="loadingBackground" class="button-primary px-3.5 py-2.5" type="button"
               v-on:click="() => switchBackground('next')">
         <ArrowLeftIcon aria-hidden="true" class="-mr-0.5 size-5"/>
       </button>
       <span id="cardBackLabel" class="text-center flex-grow-1 font-semibold text-gray-900 dark:text-white">{{ card.getCardBackName() }}</span>
       <button :disabled="loadingBackground"
-              class="inline-flex items-center gap-x-1.5 rounded-md bg-primary px-2.5 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-primary-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button"
+              class="button-primary px-3.5 py-2.5" type="button"
               v-on:click="() => switchBackground('previous')">
         <ArrowRightIcon aria-hidden="true" class="-mr-0.5 size-5"/>
       </button>
@@ -187,7 +187,7 @@ const switchBackground = function (dir) {
     </div>
 
     <div class="flex justify-center mt-2">
-      <button class="inline-flex items-center gap-x-1.5 rounded-md bg-primary px-2.5 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-primary-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" v-on:click="() => downloadImage()">
+      <button class="inline-flex items-center gap-x-1.5 button-primary px-3.5 py-2.5" type="button" v-on:click="() => downloadImage()">
         Download Card
         <DocumentArrowDownIcon aria-hidden="true" class="-mr-0.5 size-5"/>
       </button>
