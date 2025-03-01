@@ -63,6 +63,7 @@
 }
 
 #renderedCardText > * {
+    font-family: 'Palatino LT Std Light', serif;
     word-wrap: break-word;
     overflow-wrap: break-word;
     display:block;
@@ -72,6 +73,7 @@
 }
 
 .cardParent {
+    font-family: 'Palatino LT Std Light', serif;
     position:relative;
     width:450px;
     height:628px;
