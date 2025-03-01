@@ -532,10 +532,7 @@ const types = [
                 id: "cardWeaponSubtypeCustom",
             },
             {
-                id: "cardWeapon1h",
-            },
-            {
-                id: "cardWeapon2h",
+                id: "cardWeapon",
             },
             {
                 id: "cardRarity",

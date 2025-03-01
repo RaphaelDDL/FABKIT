@@ -29,8 +29,7 @@ const Card = class Card {
     herosubtype = '';
     weaponsubtype = '';
     weaponsubtypecustom = '';
-    weapon1h = '';
-    weapon2h = '';
+    weapon = '';
     tokensubtype = '';
     defensereactionsubtype = '';
     defensereactionsubtypecustom = '';
@@ -100,7 +99,7 @@ const Card = class Card {
             subtype = ' - ' + subtype;
         }
         if (this.type === 'weapon') {
-            subtype += (this.weapon2h ? ' (2H)' : ' (1H)');
+            subtype += this.weapon;
         }
 
         let type = this.capitalizeFirstLetter(this.type).split('_').map((word) => this.capitalizeFirstLetter(word)).join(' ');
