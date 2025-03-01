@@ -8,12 +8,12 @@ fs.writeFileSync('./src/config/backgrounds.js', backgrounds);
 
 // https://vitejs.dev/config/
 export default defineConfig({
+    base: '/FABKIT/',
     plugins: [
         tailwindcss(),
         vue()
     ],
     server: {
         port: 8080,
-        hot: true,
     }
 });

@@ -82,7 +82,7 @@ const tinyMCEConfig = {
   branding: false,
   skin: (window.matchMedia("(prefers-color-scheme: dark)").matches ? "oxide-dark" : "oxide"),
   content_css: (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : ""),
-  content_style: "@import url('/tinymce/fonts.css');body { font-family: Palatino LT Std Light; }",
+  content_style: "@import url('tinymce/fonts.css');body { font-family: Palatino LT Std Light; }",
   setup: (editor) => {
     buttons.forEach((button) => {
       editor.ui.registry.addButton('custom_button_' + button.icon, {
@@ -578,15 +578,15 @@ const tinyMCEConfig = {
                     id="cardRarity"
                     v-model="fields.cardRarity"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
-                  <option value="/img/rarities/rarity_common.svg">Common</option>
-                  <option value="/img/rarities/rarity_fabled.svg">Fabled</option>
-                  <option value="/img/rarities/rarity_legendary.svg">Legendary</option>
-                  <option value="/img/rarities/rarity_majestic.svg">Majestic</option>
-                  <option value="/img/rarities/rarity_marvel.svg">Marvel</option>
-                  <option value="/img/rarities/rarity_promo.svg">Promo</option>
-                  <option value="/img/rarities/rarity_rare.svg">Rare</option>
-                  <option value="/img/rarities/rarity_superrare.svg">Super Rare</option>
-                  <option value="/img/rarities/rarity_token.svg">Token</option>
+                  <option value="img/rarities/rarity_common.svg">Common</option>
+                  <option value="img/rarities/rarity_fabled.svg">Fabled</option>
+                  <option value="img/rarities/rarity_legendary.svg">Legendary</option>
+                  <option value="img/rarities/rarity_majestic.svg">Majestic</option>
+                  <option value="img/rarities/rarity_marvel.svg">Marvel</option>
+                  <option value="img/rarities/rarity_promo.svg">Promo</option>
+                  <option value="img/rarities/rarity_rare.svg">Rare</option>
+                  <option value="img/rarities/rarity_superrare.svg">Super Rare</option>
+                  <option value="img/rarities/rarity_token.svg">Token</option>
                 </select>
                 <ChevronDownIcon
                     aria-hidden="true"
@@ -656,7 +656,7 @@ const tinyMCEConfig = {
                   <editor
                       api-key="gpl"
                       :init="tinyMCEConfig"
-                      tinymce-script-src="/tinymce/tinymce.min.js"
+                      tinymce-script-src="tinymce/tinymce.min.js"
                   />
                 </div>
               </div>

@@ -30,7 +30,7 @@ getFiles('public/img/cardbacks').forEach((file) => {
         if (!res[sub1][sub2]) {
             res[sub1][sub2] = [];
         }
-        res[sub1][sub2].push('/img/cardbacks/' + sub1match[1] + '/' + sub1match[2]);
+        res[sub1][sub2].push('img/cardbacks/' + sub1match[1] + '/' + sub1match[2]);
         return;
     }
     if (!res[sub1]) {
@@ -39,7 +39,7 @@ getFiles('public/img/cardbacks').forEach((file) => {
     if(!res[sub1][1]) {
         res[sub1][1] = [];
     }
-    res[sub1][1].push('/img/cardbacks/' + sub1match[1] + '/' + sub1match[2]);
+    res[sub1][1].push('img/cardbacks/' + sub1match[1] + '/' + sub1match[2]);
 })
 const backgrounds = `const backgrounds = ${JSON.stringify(res)};
 export function useBackgrounds() {
