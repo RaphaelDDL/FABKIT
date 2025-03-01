@@ -477,7 +477,7 @@ const tinyMCEConfig = {
                 </div>
               </template>
             </div>
-            <div v-if="isFieldShown('cardMacroGroup')" class="">
+           <div v-if="isFieldShown('cardMacroGroup')" class="">
               <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardMacroGroup">Macro Group (f.e.
                 Rosetta)</label>
               <div class="mt-2">

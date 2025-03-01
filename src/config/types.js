@@ -363,9 +363,9 @@ const types = [
             {
                 id: "cardText",
             },
-            {
-                id: "cardMacroGroup",
-            },
+            // {
+            //     id: "cardMacroGroup",
+            // },
             {
                 id: "cardRarity",
             },
