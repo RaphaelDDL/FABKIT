@@ -3,17 +3,17 @@ import {ref, watch} from 'vue'
 import {Dialog, DialogPanel, TransitionChild, TransitionRoot} from '@headlessui/vue'
 import {
   Bars3Icon,
-  DocumentArrowDownIcon,
-  ArchiveBoxArrowDownIcon,
   XMarkIcon,
   AdjustmentsHorizontalIcon,
+  PaintBrushIcon, GiftIcon, RectangleStackIcon,
 } from '@heroicons/vue/24/outline'
 import {useRoute} from "vue-router";
 
 
 const navigation = [
-  {name: 'Create Card', route: 'home', icon: DocumentArrowDownIcon},
-  {name: 'My Cards', route: 'my-cards', icon: ArchiveBoxArrowDownIcon},
+  {name: 'Card Creator', route: 'home', icon: PaintBrushIcon},
+  {name: 'My Cards', route: 'my-cards', icon: RectangleStackIcon},
+  {name: 'Booster Opener', route: 'booster-opener', icon: GiftIcon},
   {name: 'Settings', route: 'settings', icon: AdjustmentsHorizontalIcon},
 ];
 
@@ -52,7 +52,7 @@ watch(route, (oldValue, newValue) => {
               <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-dark px-6 pb-2">
                 <div class="flex h-16 gap-1 shrink-0 items-center text-primary">
                   <img alt="FABKIT" class="h-8 w-auto" src="/src/assets/Fabkitlogo_notext.svg"/>
-                  FABKIT
+                  <h1 class="text-sm/6 font-semibold text-primary">FaBKit</h1>
                 </div>
                 <nav class="flex flex-1 flex-col">
                   <ul class="flex flex-1 flex-col gap-y-7" role="list">
@@ -105,7 +105,7 @@ watch(route, (oldValue, newValue) => {
         <span class="sr-only">Open sidebar</span>
         <Bars3Icon aria-hidden="true" class="size-6"/>
       </button>
-      <div class="flex-1 text-sm/6 font-semibold text-primary">{{ currentRouteName }}</div>
+      <div class="flex flex-row items-center text-sm/6 font-semibold text-primary"> <img src="/src/assets/Fabkitlogo_notext.svg" alt="FABKIT Logo" class="h-8 pr-2"> FaBKit - {{ currentRouteName }}</div>
     </div>
   </div>
 </template>

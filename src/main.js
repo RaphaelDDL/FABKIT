@@ -6,10 +6,12 @@ import App from "./App.vue";
 import MyCards from "./components/MyCards.vue";
 import Settings from "./components/Settings.vue";
 import VueKonva from 'vue-konva';
+import WorkInProgress from "./components/WorkInProgress.vue";
 
 const routes = [
     {path: '/', name:'home', component: Home},
     {path: '/my-cards', name: 'my-cards', component: MyCards},
+    {path: '/booster-opener', name: 'booster-opener', component: WorkInProgress},
     {path: '/settings', name: 'settings', component: Settings},
 ]
 
