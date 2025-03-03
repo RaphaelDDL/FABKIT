@@ -7,3 +7,8 @@
     font-family: 'Palatino LT Std Light';
     src: url('../fonts/Palatino LT Std Light.otf') format('opentype');
 }
+
+@font-face {
+    font-family: 'Dialog Cond SemiBold Regular';
+    src: url('../fonts/Dialog Cond SemiBold Regular.woff2') format('truetype');
+}

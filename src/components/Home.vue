@@ -4,26 +4,92 @@ import {PhotoIcon} from '@heroicons/vue/24/solid'
 import {ChevronDownIcon} from '@heroicons/vue/16/solid'
 import useTypes from "../config/types.js";
 import {useFields} from "../helpers/fields.js";
-import Card from "./Card.vue";
-import {TrashIcon} from "@heroicons/vue/24/solid/index.js";
+import {ArrowLeftIcon, ArrowRightIcon, DocumentArrowDownIcon, TrashIcon} from "@heroicons/vue/24/solid/index.js";
 import Editor from '@tinymce/tinymce-vue'
 import {RadioGroup, RadioGroupOption} from "@headlessui/vue";
+import {useCanvasHelper} from "../helpers/canvas.js";
+import {computed, getCurrentInstance, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
+import {useBackgrounds} from "../config/backgrounds.js";
+import {useCardBacks} from "../config/card_backs.js";
+import html2canvas from "html2canvas-pro";
+import Konva from "konva";
 
 
 const types = useTypes();
+const capitalizeFirstLetter = function (val) {
+  return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
 const fields = useFields();
+
+const {
+  cardType,
+  cardPitch,
+  cardName,
+  cardCost,
+  cardText,
+  cardPower,
+  cardHeroIntellect,
+  cardTalent,
+  cardTalentCustom,
+  cardClass,
+  cardClassCustom,
+  cardSecondaryClass,
+  cardSecondaryClassCustom,
+  cardActionSubtype,
+  cardActionSubtypeCustom,
+  cardDefenseReactionSubtype,
+  cardDefenseReactionSubtypeCustom,
+  cardEquipmentSubtype,
+  cardEquipmentSubtypeCustom,
+  cardInstantSubtype,
+  cardInstantSubtypeCustom,
+  cardResourceSubtype,
+  cardResourceSubtypeCustom,
+  cardMacroGroup,
+  cardHeroSubtype,
+  cardWeaponSubtype,
+  cardWeaponSubtypeCustom,
+  cardWeapon,
+  cardRarity,
+  cardTokenSubtype,
+  cardDefense,
+  cardLife,
+  cardUploadedArtwork,
+} = fields;
+
+const CanvasHelper = useCanvasHelper();
+const configKonva = {
+  width: 450,
+  height: 628,
+};
+const stage = ref();
+const artwork = ref();
+const background = ref();
+const footer = ref();
+const footertext = ref();
+
+const canvasHelper = new CanvasHelper();
+
+const backgroundIndex = ref(0);
+
+const pitch = computed(() => {
+  return cardPitch.value || 1;
+})
+
+const backgrounds = useBackgrounds();
+const cardBackConfigs = useCardBacks();
 
 // a computed ref
 const isFieldShown = (fieldId) => {
-  if (fields.cardType === '') return false;
+  if (cardType.value === '') return false;
 
-  const selectedType = types.find(t => t.type === fields.cardType);
+  const selectedType = types.find(t => t.type === cardType.value);
   if (!selectedType) return false;
 
   const field = selectedType.fields.find(f => f.id === fieldId);
   if (!field) {
-    // Reset field value when not shown
-    fields[fieldId] = '';
+    console.log(fieldId);
+    fields[fieldId].value = '';
     return false;
   }
   return true;
@@ -36,10 +102,74 @@ const readFile = function readFile(event) {
   const FR = new FileReader();
 
   FR.addEventListener("load", function (evt) {
-    fields.uploadedartwork = evt.target.result;
+    cardUploadedArtwork.value = evt.target.result;
   });
 
   FR.readAsDataURL(event.target.files[0]);
+}
+
+const availableBackgrounds = computed(() => {
+  return backgrounds[backgroundFolder.value][pitch.value] || [];
+});
+
+const backgroundFolder = computed(() => {
+  if (["equipment", "hero", "token", "weapon", "resource"].includes(cardType.value)) {
+    return cardType.value
+  }
+  if ("demi_hero" === cardType.value) {
+    return "hero";
+  }
+  // Determine category based on attack/defense presence
+  const hasPower = cardPower.value;
+  const hasDefense = cardDefense.value;
+
+  // Special categories (direct folder mapping)
+  if (hasPower && hasDefense) {
+    return "allstats";
+  } else if (!hasDefense && hasPower) {
+    return 'nodefense';
+  } else if (!hasPower && hasDefense) {
+    return "nopower";
+  }
+
+  return "nostats";
+})
+
+const currentBackground = computed(() => {
+  if (backgroundIndex.value > (availableBackgrounds.value.length - 1)) {
+    // Reset the index to 0 if it's out of bounds
+    backgroundIndex.value = 0;
+  }
+  if (!backgrounds[backgroundFolder.value]) return '';
+  if (!backgrounds[backgroundFolder.value][pitch.value]) return '';
+  if (!backgrounds[backgroundFolder.value][pitch.value][backgroundIndex.value]) return '';
+
+  return backgrounds[backgroundFolder.value][pitch.value][backgroundIndex.value];
+});
+
+const frameType = computed(() => {
+  // img/cardbacks/allstats/1/aria_allstats_1_dented.png
+  const re = /.*_(.*).png/
+  const match = currentBackground.value.match(re);
+
+  if (!match || !match[1]) {
+    console.error(`No frame type found for ${currentBackground.value}`)
+    return;
+  }
+
+  return match[1]
+});
+
+const getConfig = function (fieldName) {
+  if (!cardBackConfigs[frameType.value]) return {};
+  if (cardBackConfigs[frameType.value][cardType.value] && cardBackConfigs[frameType.value][cardType.value][fieldName]) {
+    return cardBackConfigs[frameType.value][cardType.value][fieldName];
+  }
+  if (cardBackConfigs[frameType.value].default[fieldName]) {
+    return cardBackConfigs[frameType.value].default[fieldName];
+  }
+
+  return {};
 }
 
 const buttons = [
@@ -96,11 +226,319 @@ const tinyMCEConfig = {
     editor.on('Paste Change input Undo Redo', function () {
       clearTimeout(editorChangeHandlerId);
       editorChangeHandlerId = setTimeout(function () {
-        fields.cardText = editor.getContent();
+        cardText.value = editor.getContent();
       }, 250);
     });
   }
 };
+
+const cardTextImage = new Konva.Image(
+    getConfig('cardText')
+);
+
+const scaledFontsize = function (text, fontSize, fontface, desiredWidth) {
+  const c = document.createElement('canvas');
+  const cctx = c.getContext('2d');
+  cctx.font = fontSize + 'px ' + fontface;
+  const textWidth = cctx.measureText(text).width;
+  if (textWidth < desiredWidth) {
+    return fontSize;
+  }
+
+  // Try and calculate the correct fontsize first
+  let newFontSize = (((fontSize * desiredWidth) / textWidth));
+
+  // If it's correct we return it
+  if (cctx.measureText(text).width <= desiredWidth) {
+    return newFontSize;
+  }
+
+  // increment the fontsize with 0.01 untill we get a good size
+  while (cctx.measureText(text).width > desiredWidth) {
+    newFontSize -= 0.01;
+    cctx.font = newFontSize + 'px ' + fontface;
+  }
+
+  return newFontSize;
+}
+
+const downloadImage = function () {
+  cardTextImage.image('');
+  // convert DOM into image
+  html2canvas(document.querySelector('#renderedCardText'), {
+    scale: 1,
+    width: 345,
+    height: 135,
+    backgroundColor: 'rgba(0,0,0,0)',
+  }).then((canvas) => {
+    canvasHelper.backgroundLayer.add(cardTextImage);
+    // show it inside Konva.Image
+    cardTextImage.image(canvas);
+
+    downloadURI(stage.value.getStage().toDataURL({pixelRatio: 1}), (cardName.value || 'card') + '.png');
+
+    cardTextImage.image('');
+  });
+}
+const downloadURI = function (uri, name) {
+  const link = document.createElement('a');
+  link.download = name;
+  link.href = uri;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  link.remove();
+}
+
+const containerElement = ref();
+const contentElement = ref();
+
+function recalculateRatio() {
+  if (containerElement.value === undefined || contentElement.value === undefined) return;
+  resizeText(
+      {
+        element: contentElement.value,
+        step: 0.1,
+        minSize: 1,
+        maxSize: 17.82
+      })
+}
+
+const isOverflown = ({clientHeight, scrollHeight}) => scrollHeight > clientHeight
+
+const resizeText = ({element, elements, minSize = 10, maxSize = 512, step = 1, unit = 'px'}) => {
+  (elements || [element]).forEach(el => {
+    let i = minSize
+    let overflow = false
+
+    const parent = el.parentNode
+
+    el.style.fontSize = `${maxSize}${unit}`
+    el.style.lineHeight = (((maxSize)) / 17.82) * 21.16 + 'px';
+    if (!isOverflown(parent)) {
+      // If not too tall, don't do anything
+      return;
+    }
+
+    while (!overflow && i < maxSize) {
+      el.style.fontSize = `${i}${unit}`
+      el.style.lineHeight = (((i)) / 17.82) * 21.16 + 'px';
+      overflow = isOverflown(parent)
+
+      if (!overflow) i += step
+    }
+
+    // revert to last state where no overflow happened
+    el.style.fontSize = `${i - step}${unit}`
+    el.style.lineHeight = (((i - step)) / 17.82) * 21.16 + 'px';
+  })
+}
+
+
+watch(cardText, () => {
+  nextTick().then(() => {
+    recalculateRatio();
+  })
+});
+
+const loadingBackground = ref(false);
+
+const doLoading = async function (callback) {
+  loadingBackground.value = true;
+  const konvaStage = stage.value.getStage();
+  // if it takes longer than 100 ms to load => set visual indicator
+  setTimeout(() => {
+    if (loadingBackground.value === true) {
+      konvaStage.opacity(0.5)
+    }
+  }, 100);
+
+  callback().finally(() => {
+    loadingBackground.value = false;
+    konvaStage.opacity(1);
+  });
+}
+
+const clamp = function (value, min, max) {
+  return Math.max(min, Math.min(value, max));
+}
+
+const switchBackground = function (dir) {
+  const available = availableBackgrounds.value;
+  if (dir === 'next') {
+    backgroundIndex.value = clamp(
+        (backgroundIndex.value - 1 + available.length) % available.length,
+        0,
+        available.length - 1
+    );
+
+    return Promise.resolve();
+  }
+  if (dir === 'previous') {
+    backgroundIndex.value = clamp(
+        (backgroundIndex.value - 1 + available.length) % available.length,
+        0,
+        available.length - 1
+    );
+    return Promise.resolve();
+  }
+
+  return Promise.resolve();
+}
+
+watch(currentBackground, (newBackground) => {
+  nextTick(() => {
+    doLoading(async () => {
+      return canvasHelper.drawBackground(newBackground);
+    })
+  })
+});
+
+const cardbackName = computed(() => {
+  // img/cardbacks/allstats/1/aria_allstats_1_dented.png
+  const re = /([^\\^\/]*?)_.*.png/
+  const match = currentBackground.value.match(re);
+
+  if (!match || !match[1]) {
+    return '';
+  }
+
+  return capitalizeFirstLetter(match[1]);
+})
+
+const cardTypeText = computed(() => {
+  let classText = cardClass.value;
+  if (classText === 'Custom' && cardClassCustom.value) {
+    classText = cardClassCustom.value;
+  }
+
+  let subtype = '';
+  switch (cardType.value) {
+    case 'action':
+      subtype = cardActionSubtype.value;
+      if (subtype === 'Custom') {
+        subtype = cardActionSubtypeCustom.value;
+      }
+      break;
+    case 'defense_reaction':
+      subtype = cardDefenseReactionSubtype.value;
+      if (subtype === 'Custom') {
+        subtype = cardDefenseReactionSubtypeCustom.value;
+      }
+      break;
+    case 'equipment':
+      subtype = cardEquipmentSubtype.value;
+      if (subtype === 'Custom') {
+        subtype = cardEquipmentSubtypeCustom.value;
+      }
+      break;
+    case 'instant':
+      subtype = cardInstantSubtype.value;
+      if (subtype === 'Custom') {
+        subtype = cardInstantSubtypeCustom.value;
+      }
+      break;
+    case 'resource':
+      subtype = cardResourceSubtype.value;
+      if (subtype === 'Custom') {
+        subtype = cardResourceSubtypeCustom.value;
+      }
+      break;
+    case 'hero':
+    case 'demi_hero':
+      subtype = cardHeroSubtype.value;
+      break;
+    case 'weapon':
+      subtype = cardWeaponSubtype.value;
+      if (subtype === 'Custom') {
+        subtype = cardWeaponSubtypeCustom.value;
+      }
+      break;
+    case 'token':
+      subtype = cardTokenSubtype.value;
+      break;
+  }
+
+  if (subtype) {
+    subtype = ' - ' + subtype;
+  }
+  if (cardType.value === 'weapon') {
+    subtype += ' ' + cardWeapon.value;
+  }
+
+  let type = capitalizeFirstLetter(cardType.value).split('_').map((word) => capitalizeFirstLetter(word)).join(' ');
+
+  let secondaryClass = '';
+  if (cardSecondaryClass.value) {
+    secondaryClass = ' / ' + cardSecondaryClass.value;
+    if (cardSecondaryClass.value === 'Custom') {
+      secondaryClass = ' / ' + cardSecondaryClassCustom.value;
+    }
+  }
+
+  let talent = cardTalent.value;
+  if (talent === 'Custom') {
+    talent = cardTalentCustom.value;
+  }
+
+  return `${talent} ${classText} ${secondaryClass} ${type} ${subtype}`
+      .replace(/  +/g, ' ')
+      .replace(/ $/, '')
+      .replace(/^ /, '')
+      ;
+});
+
+const nameFontSize = computed(() => {
+  const config = getConfig('cardName') || {};
+
+  return scaledFontsize(cardName.value, config.fontSize, config.fontFamily, config.width);
+})
+
+const typeTextFontSize = computed(() => {
+  const typeTextConfig = getConfig('cardTypeText') || {};
+
+  return scaledFontsize(cardTypeText.value, typeTextConfig.fontSize, typeTextConfig.fontFamily, typeTextConfig.width);
+})
+
+const footerTextFontSize = computed(() => {
+  const footerTextConfig = getConfig('cardFooterText') || {};
+
+  return scaledFontsize(cardTypeText.value, footerTextConfig.fontSize, footerTextConfig.fontFamily, footerTextConfig.width);
+})
+
+
+onMounted(function () {
+  canvasHelper.artworkLayer = artwork.value.getStage();
+  canvasHelper.backgroundLayer = background.value.getStage();
+  canvasHelper.footerLayer = footer.value.getStage();
+})
+
+watch(cardType, (newCardType) => {
+  if (!newCardType) return;
+  canvasHelper.drawBackground(currentBackground.value);
+  canvasHelper.drawUploadedArtwork(cardUploadedArtwork.value, getConfig('cardUploadedArtwork'));
+  setTimeout(
+      () => {
+        footertext.value.getStage().text('FABKIT - NOT TOURNAMENT LEGAL - FaB TCG by © LSS');
+      },
+      250
+  )
+});
+
+watch(cardRarity, (newCardRarity) => {
+  if (!newCardRarity) return;
+  canvasHelper.drawRarity(newCardRarity, getConfig('cardRarity'));
+})
+
+watch(cardUploadedArtwork, (newUploadedArtwork) => {
+  canvasHelper.drawUploadedArtwork(newUploadedArtwork, getConfig('cardUploadedArtwork'));
+})
+
+onUnmounted(() => {
+  Object.keys(fields).forEach(key => {
+    fields[key].value = '';
+  });
+})
 </script>
 
 <template>
@@ -108,7 +546,7 @@ const tinyMCEConfig = {
     <div class="w-full mb-3">
       <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="location">Type</label>
       <div class="mt-2 grid grid-cols-1">
-        <select id="cardType" v-model="fields.cardType"
+        <select id="cardType" v-model="cardType"
                 class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6"
                 name="location">
           <option value="">-- Select Card Type --</option>
@@ -130,7 +568,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardPitch"
-                    v-model="fields.cardPitch"
+                    v-model="cardPitch"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="1">1</option>
                   <option value="2">2</option>
@@ -142,14 +580,14 @@ const tinyMCEConfig = {
               </div>
             </div>
             <div v-if="isFieldShown('cardName')" class="">
-              <label v-if="['hero', 'demi_hero'].includes(fields.cardType)" id="cardHeroNameLabel"
+              <label v-if="['hero', 'demi_hero'].includes(cardType)" id="cardHeroNameLabel"
                      class="block text-sm/6 font-medium text-gray-900 dark:text-white">Hero name</label>
               <label v-else id="cardNameLabel" class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardName">Card
                 name</label>
               <div class="mt-2">
                 <div
                     class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardName" v-model="fields.cardName"
+                  <input id="cardName" v-model="cardName"
                          class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                          maxlength="50" type="text">
                 </div>
@@ -160,7 +598,7 @@ const tinyMCEConfig = {
               <div class="mt-2">
                 <div
                     class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardCost" v-model="fields.cardCost"
+                  <input id="cardCost" v-model="cardCost"
                          class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                          maxlength="2" type="text">
                 </div>
@@ -171,7 +609,7 @@ const tinyMCEConfig = {
               <div class="mt-2">
                 <div
                     class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardPower" v-model="fields.cardPower"
+                  <input id="cardPower" v-model="cardPower"
                          class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                          type="number">
                 </div>
@@ -182,7 +620,7 @@ const tinyMCEConfig = {
               <div class="mt-2">
                 <div
                     class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardHeroIntellect" v-model="fields.cardHeroIntellect"
+                  <input id="cardHeroIntellect" v-model="cardHeroIntellect"
                          class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                          type="number">
                 </div>
@@ -193,7 +631,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardTalent"
-                    v-model="fields.cardTalent"
+                    v-model="cardTalent"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Chaos">Chaos</option>
@@ -212,12 +650,12 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardTalent === 'Custom'">
+              <template v-if="cardTalent === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardTalentCustom">Custom Talent</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardTalentCustom" v-model="fields.cardTalentCustom"
+                    <input id="cardTalentCustom" v-model="cardTalentCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6 "
                            placeholder="Enter custom resource subtype"
                            type="text">
@@ -230,9 +668,9 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardClass"
-                    v-model="fields.cardClass"
-                    @change="!fields.cardClass ? fields.cardSecondaryClass = '' : ''"
-                    class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
+                    v-model="cardClass"
+                    class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6"
+                    @change="!cardClass ? cardSecondaryClass = '' : ''">
                   <option value="">None</option>
                   <option value="Adjudicator">Adjudicator</option>
                   <option value="Assassin">Assassin</option>
@@ -255,23 +693,23 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardClass === 'Custom'">
+              <template v-if="cardClass === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardClassCustom">Custom class</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardClassCustom" v-model="fields.cardClassCustom"
+                    <input id="cardClassCustom" v-model="cardClassCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                            placeholder="Enter custom class" type="text">
                   </div>
                 </div>
               </template>
             </div>
-            <div v-if="fields.cardClass && isFieldShown('cardSecondaryClass')" class="">
+            <div v-if="isFieldShown('cardSecondaryClass')" class="">
               <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardSecondaryClass">Secondary class
                 (optional)</label>
               <div class="mt-2 grid grid-cols-1">
-                <select id="cardSecondaryClass" v-model="fields.cardSecondaryClass"
+                <select id="cardSecondaryClass" v-model="cardSecondaryClass"
                         class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Adjudicator">Adjudicator</option>
@@ -295,12 +733,12 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardSecondaryClass === 'Custom'">
+              <template v-if="cardSecondaryClass === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardSecondaryClassCustom">Custom class</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardSecondaryClassCustom" v-model="fields.cardSecondaryClassCustom"
+                    <input id="cardSecondaryClassCustom" v-model="cardSecondaryClassCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                            placeholder="Enter custom class"
                            type="text">
@@ -315,7 +753,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardActionSubtype"
-                    v-model="fields.cardActionSubtype"
+                    v-model="cardActionSubtype"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Attack">Attack</option>
@@ -335,12 +773,12 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardActionSubtype === 'Custom'">
+              <template v-if="cardActionSubtype === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardActionSubtypeCustom">Custom action subtype</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardActionSubtypeCustom" v-model="fields.cardActionSubtypeCustom"
+                    <input id="cardActionSubtypeCustom" v-model="cardActionSubtypeCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6 "
                            placeholder="Enter custom action subtype"
                            type="text">
@@ -354,7 +792,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardDefenseReactionSubtype"
-                    v-model="fields.cardDefenseReactionSubtype"
+                    v-model="cardDefenseReactionSubtype"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Trap">Trap</option>
@@ -364,13 +802,13 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardDefenseReactionSubtype === 'Custom'">
+              <template v-if="cardDefenseReactionSubtype === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardDefenseReactionSubtypeCustom">Custom Defense Reaction
                   subtype</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardDefenseReactionSubtypeCustom" v-model="fields.cardDefenseReactionSubtypeCustom"
+                    <input id="cardDefenseReactionSubtypeCustom" v-model="cardDefenseReactionSubtypeCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6 "
                            placeholder="Enter custom defense reaction subtype"
                            type="text">
@@ -385,7 +823,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardEquipmentSubtype"
-                    v-model="fields.cardEquipmentSubtype"
+                    v-model="cardEquipmentSubtype"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Head">Head</option>
@@ -401,13 +839,13 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardEquipmentSubtype === 'Custom'">
+              <template v-if="cardEquipmentSubtype === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardEquipmentSubtypeCustom">Custom equipment
                   subtype</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardEquipmentSubtypeCustom" v-model="fields.cardEquipmentSubtypeCustom"
+                    <input id="cardEquipmentSubtypeCustom" v-model="cardEquipmentSubtypeCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6 "
                            placeholder="Enter custom equipment subtype"
                            type="text">
@@ -421,7 +859,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardInstantSubtype"
-                    v-model="fields.cardInstantSubtype"
+                    v-model="cardInstantSubtype"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Aura">Aura</option>
@@ -433,12 +871,12 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardInstantSubtype === 'Custom'">
+              <template v-if="cardInstantSubtype === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardInstantSubtypeCustom">Custom instant subtype</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardInstantSubtypeCustom" v-model="fields.cardInstantSubtypeCustom"
+                    <input id="cardInstantSubtypeCustom" v-model="cardInstantSubtypeCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6 "
                            placeholder="Enter custom instant subtype"
                            type="text">
@@ -453,7 +891,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardResourceSubtype"
-                    v-model="fields.cardResourceSubtype"
+                    v-model="cardResourceSubtype"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Gem">Gem</option>
@@ -464,13 +902,13 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardResourceSubtype === 'Custom'">
+              <template v-if="cardResourceSubtype === 'Custom'">
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardResourceSubtypeCustom">Custom resource
                   subtype</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardResourceSubtypeCustom" v-model="fields.cardResourceSubtypeCustom"
+                    <input id="cardResourceSubtypeCustom" v-model="cardResourceSubtypeCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6 "
                            placeholder="Enter custom resource subtype"
                            type="text">
@@ -478,13 +916,13 @@ const tinyMCEConfig = {
                 </div>
               </template>
             </div>
-           <div v-if="isFieldShown('cardMacroGroup')" class="">
+            <div v-if="isFieldShown('cardMacroGroup')" class="">
               <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardMacroGroup">Macro Group (f.e.
                 Rosetta)</label>
               <div class="mt-2">
                 <div
                     class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardMacroGroup" v-model="fields.cardMacroGroup"
+                  <input id="cardMacroGroup" v-model="cardMacroGroup"
                          class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                          type="text">
                 </div>
@@ -495,7 +933,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardHeroSubtype"
-                    v-model="fields.cardHeroSubtype"
+                    v-model="cardHeroSubtype"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Demon">Demon</option>
@@ -512,7 +950,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardWeaponSubtype"
-                    v-model="fields.cardWeaponSubtype"
+                    v-model="cardWeaponSubtype"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="">None</option>
                   <option value="Axe">Axe</option>
@@ -541,13 +979,13 @@ const tinyMCEConfig = {
                     aria-hidden="true"
                     class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
               </div>
-              <template v-if="fields.cardWeaponSubtype === 'Custom'">
+              <template v-if="cardWeaponSubtype === 'Custom'">
                 <!-- Custom input field for weapon type -->
                 <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardWeaponSubtypeCustom"></label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardWeaponSubtypeCustom" v-model="fields.cardWeaponSubtypeCustom"
+                    <input id="cardWeaponSubtypeCustom" v-model="cardWeaponSubtypeCustom"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6 "
                            placeholder="Enter custom weapon subtype"
                            type="text">
@@ -556,14 +994,14 @@ const tinyMCEConfig = {
               </template>
             </div>
             <div v-if="isFieldShown('cardWeapon')" class="">
-              <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" id="cardWeapon">1H or 2H?</label>
+              <label id="cardWeapon" class="block text-sm/6 font-medium text-gray-900 dark:text-white">1H or 2H?</label>
               <fieldset aria-label="1H or 2H?">
-                <RadioGroup v-model="fields.cardWeapon" class="mt-2 grid grid-cols-2 gap-6">
-                  <RadioGroupOption as="template"  value="(1H)" v-slot="{ active, checked }">
-                    <div class="cursor-pointer focus:outline-hidden" :class="[active ? 'ring-2 bg-primary ring-offset-2' : '', checked ? 'bg-primary text-white ring-0 hover:bg-primary' : 'bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50', !active && !checked ? 'ring-inset' : '', active && checked ? 'ring-2' : '', 'flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold uppercase sm:flex-1']">1h</div>
+                <RadioGroup v-model="cardWeapon" class="mt-2 grid grid-cols-2 gap-6">
+                  <RadioGroupOption v-slot="{ active, checked }" as="template" value="(1H)">
+                    <div :class="[active ? 'ring-2 bg-primary ring-offset-2' : '', checked ? 'bg-primary text-white ring-0 hover:bg-primary' : 'bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50', !active && !checked ? 'ring-inset' : '', active && checked ? 'ring-2' : '', 'flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold uppercase sm:flex-1']" class="cursor-pointer focus:outline-hidden">1h</div>
                   </RadioGroupOption>
-                  <RadioGroupOption as="template" value="(2H)" v-slot="{ active, checked }">
-                    <div class="cursor-pointer focus:outline-hidden" :class="[active ? 'ring-2 bg-primary ring-offset-2' : '', checked ? 'bg-primary text-white ring-0 hover:bg-primary' : 'bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50', !active && !checked ? 'ring-inset' : '', active && checked ? 'ring-2' : '', 'flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold uppercase sm:flex-1']">2h</div>
+                  <RadioGroupOption v-slot="{ active, checked }" as="template" value="(2H)">
+                    <div :class="[active ? 'ring-2 bg-primary ring-offset-2' : '', checked ? 'bg-primary text-white ring-0 hover:bg-primary' : 'bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50', !active && !checked ? 'ring-inset' : '', active && checked ? 'ring-2' : '', 'flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold uppercase sm:flex-1']" class="cursor-pointer focus:outline-hidden">2h</div>
                   </RadioGroupOption>
                 </RadioGroup>
               </fieldset>
@@ -573,7 +1011,7 @@ const tinyMCEConfig = {
               <div class="mt-2 grid grid-cols-1">
                 <select
                     id="cardRarity"
-                    v-model="fields.cardRarity"
+                    v-model="cardRarity"
                     class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
                   <option value="img/rarities/rarity_common.svg">Common</option>
                   <option value="img/rarities/rarity_fabled.svg">Fabled</option>
@@ -595,7 +1033,7 @@ const tinyMCEConfig = {
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardTokenSubtype" v-model="fields.cardTokenSubtype"
+                    <input id="cardTokenSubtype" v-model="cardTokenSubtype"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                            type="text">
                   </div>
@@ -607,7 +1045,7 @@ const tinyMCEConfig = {
               <div class="mt-2">
                 <div
                     class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardDefense" v-model="fields.cardDefense"
+                  <input id="cardDefense" v-model="cardDefense"
                          class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                          type="number">
                 </div>
@@ -618,17 +1056,17 @@ const tinyMCEConfig = {
               <div class="mt-2">
                 <div
                     class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                  <input id="cardLife" v-model="fields.cardLife"
+                  <input id="cardLife" v-model="cardLife"
                          class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                          type="number">
                 </div>
               </div>
             </div>
-            <div v-if="fields.cardType !== ''" class="">
+            <div v-if="cardType !== ''" class="">
               <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="photo-cover">Artwork</label>
-              <div v-if="fields.uploadedartwork" class="mt-2 w-full flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-white px-6 py-1">
-                <img :src="fields.uploadedartwork" alt="Uploaded artwork" class="rounded">
-                <button class="inline-flex items-center gap-x-1.5 rounded-r-md bg-primary px-2.5  text-sm font-semibold text-white shadow-xs hover:bg-primary-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" v-on:click="() => fields.uploadedartwork = ''">
+              <div v-if="cardUploadedArtwork" class="mt-2 w-full flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-white px-6 py-1">
+                <img :src="cardUploadedArtwork" alt="Uploaded artwork" class="rounded">
+                <button class="inline-flex items-center gap-x-1.5 rounded-r-md bg-primary px-2.5  text-sm font-semibold text-white shadow-xs hover:bg-primary-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" v-on:click="() => cardUploadedArtwork = ''">
                   <TrashIcon aria-hidden="true" class="-mr-0.5 size-5"/>
                 </button>
               </div>
@@ -638,7 +1076,7 @@ const tinyMCEConfig = {
                   <div class="mt-4 flex text-sm/6 text-gray-600 dark:text-white">
                     <label class="relative cursor-pointer rounded-md font-semibold text-primary focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:outline-hidden hover:text-primary-500" for="cardUploadedArtwork">
                       <span>Upload your artwork</span>
-                      <input id="cardUploadedArtwork" class="sr-only" type="file" v-on:change="readFile" accept="image/png, image/jpeg, image/gif" size="10000000">
+                      <input id="cardUploadedArtwork" accept="image/png, image/jpeg, image/gif" class="sr-only" size="10000000" type="file" v-on:change="readFile">
                     </label>
                   </div>
                   <p class="text-xs/5 text-gray-600 dark:text-white">PNG, JPG, GIF up to 10MB</p>
@@ -646,13 +1084,13 @@ const tinyMCEConfig = {
               </div>
             </div>
             <div v-show="isFieldShown('cardText')" class="sm:col-span-2">
-              <label v-if="['hero', 'demi_hero'].includes(fields.cardType)" id="cardHeroPowerLabel" class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardText">Hero power</label>
+              <label v-if="['hero', 'demi_hero'].includes(cardType)" id="cardHeroPowerLabel" class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardText">Hero power</label>
               <label v-else id="cardTextLabel" class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="cardText">Card text</label>
               <div class="col-span-full">
                 <div class="mt-2">
                   <editor
-                      api-key="gpl"
                       :init="tinyMCEConfig"
+                      api-key="gpl"
                       tinymce-script-src="tinymce/tinymce.min.js"
                   />
                 </div>
@@ -661,8 +1099,69 @@ const tinyMCEConfig = {
           </div>
         </form>
       </div>
-      <div class="flex flex-col items-center">
-        <Card v-show="fields.cardType" v-model="fields" class=""></Card>
+      <div v-show="cardType" class="flex flex-col items-center">
+        <div>
+          <label class="block text-sm/6 font-medium text-gray-900 dark:text-white text-center" for="cardBackLabel">Select Card Background</label>
+          <div class="w-full flex justify-between items-center mt-2 mb-4 col-start-2">
+            <button :disabled="loadingBackground" class="button-primary px-3.5 py-2.5" type="button"
+                    v-on:click="() => switchBackground('next')">
+              <ArrowLeftIcon aria-hidden="true" class="-mr-0.5 size-5"/>
+            </button>
+            <span id="cardBackLabel" class="text-center flex-grow-1 font-semibold text-gray-900 dark:text-white">{{ cardbackName }}</span>
+            <button :disabled="loadingBackground"
+                    class="button-primary px-3.5 py-2.5" type="button"
+                    v-on:click="() => switchBackground('previous')">
+              <ArrowRightIcon aria-hidden="true" class="-mr-0.5 size-5"/>
+            </button>
+          </div>
+
+          <div class="cardParent">
+            <div id="renderedCardText" ref="containerElement">
+              <div id="renderedContent" ref="contentElement" style="font-family: 'Palatino LT Std Light', serif;" v-html="cardText"></div>
+            </div>
+            <v-stage
+                ref="stage"
+                :config="configKonva"
+            >
+              <v-layer id="artwork" ref="artwork"></v-layer>
+              <v-layer id="background" ref="background"></v-layer>
+              <v-layer id="textLayer" ref="textLayer"></v-layer>
+              <v-layer id="text">
+                <v-text v-if="cardName" :fontSize="nameFontSize" :text="cardName" v-bind="getConfig('cardName')"></v-text>
+                <v-text v-if="cardCost" :text="cardCost" v-bind="getConfig('cardCost')"></v-text>
+                <v-text v-if="cardDefense" :text="cardDefense" v-bind="getConfig('cardDefense')"></v-text>
+                <v-text v-if="cardPower" :text="cardPower" v-bind="getConfig('cardPower')"></v-text>
+                <v-text v-if="cardLife" :text="cardLife" v-bind="getConfig('cardLife')"></v-text>
+                <v-text v-if="cardHeroIntellect" :text="cardHeroIntellect" v-bind="getConfig('cardHeroIntellect')"></v-text>
+                <v-text
+                    :fontSize="typeTextFontSize"
+                    :text="cardTypeText"
+                    :x="116.3"
+                    :y="562.55"
+                    :width="217.2"
+                    :height="23"
+                    fontFamily="Amanda Std Regular"
+                    verticalAlign="middle"
+                    align="center"
+                    fill="black"
+                ></v-text>
+              </v-layer>
+              <v-layer id="footer" ref="footer" :config="configKonva">
+                <v-image v-if="cardRarity" :text="cardRarity" v-bind="getConfig('cardRarity')"></v-image>
+              </v-layer>
+              <v-layer id="footertext">
+                <v-text v-if="cardType" ref="footertext" :fontSize="footerTextFontSize" text="" v-bind="getConfig('cardFooterText')"></v-text>
+              </v-layer>
+            </v-stage>
+          </div>
+
+          <div class="flex justify-center mt-2">
+            <button class="inline-flex items-center gap-x-1.5 button-primary px-3.5 py-2.5" type="button" v-on:click="() => downloadImage()">
+              Download Card
+              <DocumentArrowDownIcon aria-hidden="true" class="-mr-0.5 size-5"/>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

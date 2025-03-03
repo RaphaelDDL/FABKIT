@@ -37,7 +37,7 @@
 
 @font-face {
     font-family: 'Dialog Cond SemiBold Regular';
-    src: url('/fonts/Dialog Cond SemiBold Regular.ttf') format('truetype');
+    src: url('/fonts/Dialog Cond SemiBold Regular.woff2') format('woff');
 }
 
 #container {
