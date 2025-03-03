@@ -96,11 +96,10 @@
     align-items:center;
     justify-content:center;
     text-align:left;
-    letter-spacing:0.2px;
+    letter-spacing:0.015em;
 }
 
-#renderedCardText > *,
-#renderedCardText p {
+#renderedCardText > * {
     font-family: 'Palatino LT Std Light', serif;
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -108,15 +107,6 @@
     width:100%;
     font-size:17.82px;
     line-height:21.16px;
-}
-
-/* Ensure strong inside p is styled correctly */
-#renderedCardText p strong,
-#renderedCardText p b,
-#renderedCardText > strong,
-#renderedCardText > b {
-    font-family: 'Palatino LT Std Medium', serif !important;
-    font-weight: normal !important;
 }
 
 .cardParent {
