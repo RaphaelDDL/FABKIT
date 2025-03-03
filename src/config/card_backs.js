@@ -1,15 +1,31 @@
 const card_backs = {
     dented: {
         default: {
-            name: {
+            cardBackground: {
+                x: 0,
+                y: 0,
+                name: 'background',
+                id: 'img-background',
+                draggable: false,
+            },
+            cardText: {
+                x: 55,
+                y: 408,
+                draggable: false,
+                name: 'card-text-image',
+            },
+            cardName: {
                 x: 88,
                 y: 41.2,
                 width: 273.5,
                 height: 31,
                 fontFamily: 'Amanda Std Regular',
                 fontSize: 25,
+                verticalAlign: "middle",
+                align: "center",
+                fill: "black",
             },
-            cost: {
+            cardCost: {
                 x: 372.1,
                 y: 34.6,
                 width: 48,
@@ -17,11 +33,12 @@ const card_backs = {
                 fontFamily: 'Palatino LT Std Light',
                 fontSize: 19,
                 verticalAlign: "middle",
+                align: "center",
                 stroke: "#C42025",
                 strokeWidth: 2,
                 fillAfterStrokeEnabled: true,
             },
-            defense: {
+            cardDefense: {
                 x: 352.3,
                 y: 572,
                 width: 24,
@@ -29,8 +46,9 @@ const card_backs = {
                 fontFamily: 'Palatino LT Std Light',
                 fontSize: 20.6,
                 verticalAlign: "middle",
+                align: "center",
             },
-            power: {
+            cardPower: {
                 x: 73,
                 y: 572,
                 width: 24,
@@ -38,8 +56,9 @@ const card_backs = {
                 fontFamily: 'Palatino LT Std Light',
                 fontSize: 20.6,
                 verticalAlign: "middle",
+                align: "center",
             },
-            typetext: {
+            cardTypeText: {
                 x: 116.3,
                 y: 562.55,
                 width: 217.2,
@@ -47,8 +66,10 @@ const card_backs = {
                 fontFamily: 'Amanda Std Regular',
                 fontSize: 17.6,
                 verticalAlign: "middle",
+                align: "center",
+                fill: "black",
             },
-            life: {
+            cardLife: {
                 x: 352.1,
                 y: 572,
                 width: 24,
@@ -56,31 +77,45 @@ const card_backs = {
                 fontFamily: 'Palatino LT Std Light',
                 fontSize: 20.6,
                 verticalAlign: "middle",
+                align: "center",
             },
-            rarity: {
+            cardRarity: {
                 x: 126,
                 y: 596,
                 width: 12,
                 height: 12,
             },
-            uploadedartwork: {
+            cardUploadedArtwork: {
                 width: 390,
                 height: 309,
                 x: 30,
                 y: 76,
             },
+            cardFooterText: {
+                x: 142,
+                y: 597.9,
+                width: 182,
+                height: 12,
+                fontFamily: 'Dialog Cond Semibold Regular',
+                fontSize: 9.2,
+                verticalAlign: "top",
+                fill: "white",
+            }
         },
         // Specialty cases
         hero: {
-            name: {
+            cardName: {
                 x: 55.6,
                 y: 34.6,
                 width: 338.5,
                 height: 38,
                 fontFamily: 'Amanda Std Regular',
                 fontSize: 29,
+                verticalAlign: "middle",
+                align: "center",
+                fill: "black",
             },
-            herointellect: {
+            cardHeroIntellect: {
                 x: 73.4,
                 y: 572,
                 width: 24,
@@ -89,20 +124,23 @@ const card_backs = {
                 fontSize: 20.6,
                 verticalAlign: "middle",
             },
-            uploadedartwork: {
+            cardUploadedArtwork: {
                 height: 628,
             },
         },
         demi_hero: {
-            name: {
+            cardName: {
                 x: 55.6,
                 y: 34.6,
                 width: 338.5,
                 height: 38,
                 fontFamily: 'Amanda Std Regular',
                 fontSize: 29,
+                verticalAlign: "middle",
+                align: "center",
+                fill: "black",
             },
-            herointellect: {
+            cardHeroIntellect: {
                 x: 73.4,
                 y: 572,
                 width: 24,
@@ -111,22 +149,38 @@ const card_backs = {
                 fontSize: 20.6,
                 verticalAlign: "middle",
             },
-            uploadedartwork: {
+            cardUploadedArtwork: {
                 height: 628,
             },
         },
     },
     flat: {
         default: {
-            name: {
+            cardBackground: {
+                x: 0,
+                y: 0,
+                name: 'background',
+                id: 'img-background',
+                draggable: false,
+            },
+            cardText: {
+                x: 55,
+                y: 408,
+                draggable: false,
+                name: 'card-text-image',
+            },
+            cardName: {
                 x: 88,
                 y: 41.2,
                 width: 273.5,
                 height: 31,
                 fontFamily: 'Amanda Std Regular',
                 fontSize: 25,
+                verticalAlign: "middle",
+                align: "center",
+                fill: "black",
             },
-            cost: {
+            cardCost: {
                 x: 372.1,
                 y: 34.6,
                 width: 48,
@@ -138,7 +192,7 @@ const card_backs = {
                 strokeWidth: 2,
                 fillAfterStrokeEnabled: true,
             },
-            defense: {
+            cardDefense: {
                 x: 352.3,
                 y: 571.5,
                 width: 24,
@@ -147,7 +201,7 @@ const card_backs = {
                 fontSize: 20.6,
                 verticalAlign: "middle",
             },
-            power: {
+            cardPower: {
                 x: 73,
                 y: 571.5,
                 width: 24,
@@ -156,7 +210,7 @@ const card_backs = {
                 fontSize: 20.6,
                 verticalAlign: "middle",
             },
-            typetext: {
+            cardTypeText: {
                 x: 116.3,
                 y: 562.55,
                 width: 217.2,
@@ -164,8 +218,10 @@ const card_backs = {
                 fontFamily: 'Amanda Std Regular',
                 fontSize: 17.6,
                 verticalAlign: "middle",
+                align: "center",
+                fill: "black",
             },
-            herointellect: {
+            cardHeroIntellect: {
                 x: 73.4,
                 y: 571.8,
                 width: 24,
@@ -174,7 +230,7 @@ const card_backs = {
                 fontSize: 20.6,
                 verticalAlign: "middle",
             },
-            life: {
+            cardLife: {
                 x: 352.1,
                 y: 571.8,
                 width: 24,
@@ -183,7 +239,7 @@ const card_backs = {
                 fontSize: 20.6,
                 verticalAlign: "middle",
             },
-            uploadedartwork: {
+            cardUploadedArtwork: {
                 width: 390,
                 height: 309,
                 x: 30,
@@ -191,12 +247,12 @@ const card_backs = {
             },
         },
         hero: {
-            uploadedartwork: {
+            cardUploadedArtwork: {
                 height: 628,
             },
         },
         demi_hero: {
-            uploadedartwork: {
+            cardUploadedArtwork: {
                 height: 628,
             },
         }

@@ -5,7 +5,6 @@ const CanvasHelpers = class CanvasHelper {
     artworkLayer;
     backgroundLayer;
     footerLayer;
-    textLayer;
 
     constructor() {
     }
@@ -91,7 +90,7 @@ const CanvasHelpers = class CanvasHelper {
             return;
         }
 
-        self.artworkLayer.destroyChildren();
+        self.artworkLayer.removeChildren();
 
         // function to apply crop
         function applyCrop(pos) {
@@ -132,7 +131,7 @@ const CanvasHelpers = class CanvasHelper {
             return;
         }
 
-        self.footerLayer.destroyChildren();
+        self.footerLayer.removeChildren();
 
         Konva.Image.fromURL(
             src,
@@ -173,7 +172,7 @@ const CanvasHelpers = class CanvasHelper {
                     if (existing) {
                         // disable clear before draw
                         self.backgroundLayer.clearBeforeDraw(false);
-                        self.backgroundLayer.destroyChildren()
+                        self.backgroundLayer.removeChildren();
                     }
                     // Enable clear before draw
                     self.backgroundLayer.clearBeforeDraw(true);
@@ -185,161 +184,6 @@ const CanvasHelpers = class CanvasHelper {
         });
     }
 
-    drawText(fieldName, text, coordinates, fontFamily, fontSize) {
-        const field = this.textLayer.findOne('.' + fieldName);
-        if (field) {
-            field.setAttrs(config);
-            return;
-        }
-
-        const textNode = new Konva.Text({
-            name: fieldName,
-            x: coordinates.x,
-            y: coordinates.y,
-            width: coordinates.width,
-            height: coordinates.height,
-            align: 'center',
-            verticalAlign: 'center',
-            text: text,
-            fontSize: fontSize,
-            fontFamily: fontFamily,
-            fill: 'black'
-        });
-
-        this.textLayer.add(
-            textNode
-        );
-
-        const tr = new Konva.Transformer({
-            nodes: [textNode],
-            resizeEnabled: false,
-            rotateEnabled: false,
-            rotateLineVisible: false,
-            borderEnabled: false,
-        });
-
-        this.textLayer.add(tr);
-    }
-
-    drawCenteredText(config) {
-        /**
-         * @type {Text}
-         */
-        const field = this.textLayer.findOne('.' + config.name);
-        if (field) {
-            Object.keys(config).forEach((key) => {
-                if (key === 'fontSize') {
-                    return;
-                }
-                field.setAttr(key, config[key]);
-            });
-            this.setScaledFontSize(field, config);
-            return;
-        }
-
-        const textConfig = {
-            ...{
-                align: 'center',
-                verticalAlign: 'middle',
-                fill: 'black',
-            },
-            ...config,
-        };
-        const textNode = new Konva.Text(textConfig);
-
-        this.textLayer.add(
-            textNode
-        );
-
-        this.setScaledFontSize(textNode, textConfig);
-
-        let tr = new Konva.Transformer({
-            nodes: [textNode],
-            resizeEnabled: false,
-            rotateEnabled: false,
-            rotateLineVisible: false,
-            borderEnabled: false,
-        });
-
-        this.textLayer.add(tr);
-    }
-
-    setScaledFontSize(textNode, config) {
-        const scaledFontSize = this.scaledFontsize(
-            textNode.attrs.text,
-            config.fontSize,
-            textNode.fontFamily(),
-            textNode.width()
-        )
-        if (scaledFontSize <= config.fontSize) {
-            textNode.fontSize(scaledFontSize);
-        }
-        // reset scale
-        textNode.setAttrs({
-            width: textNode.width() * textNode.scaleX(),
-            height: textNode.height() * textNode.scaleY(),
-            scaleX: 1, scaleY: 1
-        });
-    }
-
-    drawTextFromConfig(config) {
-        const field = this.textLayer.findOne('.' + config.name);
-        if (field) {
-            field.text(config.text);
-            this.textLayer.batchDraw();
-            return;
-        }
-
-        const textNode = new Konva.Text(
-            {
-                ...{
-                    align: 'center',
-                    verticalAlign: 'center',
-                    fill: 'black',
-                },
-                ...config,
-            }
-        );
-        this.textLayer.add(
-            textNode
-        );
-
-        const tr = new Konva.Transformer({
-            nodes: [textNode],
-            resizeEnabled: false,
-            rotateEnabled: false,
-            rotateLineVisible: false,
-            borderEnabled: false,
-        });
-
-        this.textLayer.add(tr);
-    }
-
-    scaledFontsize(text, fontSize, fontface, desiredWidth) {
-        const c = document.createElement('canvas');
-        const cctx = c.getContext('2d');
-        cctx.font = fontSize + 'px ' + fontface;
-        const textWidth = cctx.measureText(text).width;
-        if (textWidth < desiredWidth) {
-            return fontSize;
-        }
-
-        // Try and calculate the correct fontsize first
-        let newFontSize = (((fontSize * desiredWidth) / textWidth));
-
-        // If it's correct we return it
-        if (cctx.measureText(text).width <= desiredWidth) {
-            return newFontSize;
-        }
-
-        // increment the fontsize with 0.01 untill we get a good size
-        while (cctx.measureText(text).width > desiredWidth) {
-            newFontSize -= 0.01;
-            cctx.font = newFontSize + 'px ' + fontface;
-        }
-
-        return newFontSize;
-    }
 }
 
 export function useCanvasHelper() {
