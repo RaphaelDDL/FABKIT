@@ -10,37 +10,37 @@
 
 @font-face {
     font-family: 'Palatino LT Std Bold';
-    src: url('/fonts/Palatino LT Std Bold.otf') format('opentype');
+    src: url('../fonts/Palatino LT Std Bold.otf') format('opentype');
 }
 
 @font-face {
     font-family: 'Palatino LT Std Bold Italic';
-    src: url('/fonts/Palatino LT Std Bold Italic.otf') format('opentype');
+    src: url('../fonts/Palatino LT Std Bold Italic.otf') format('opentype');
 }
 
 @font-face {
     font-family: 'Palatino LT Std Light Italic';
-    src: url('/fonts/Palatino LT Std Light Italic.otf') format('opentype');
+    src: url('../fonts/Palatino LT Std Light Italic.otf') format('opentype');
 }
 
 @font-face {
     font-family: 'Palatino LT Std Medium';
-    src: url('/fonts/Palatino LT Std Medium.otf') format('opentype');
+    src: url('../fonts/Palatino LT Std Medium.otf') format('opentype');
 }
 
 @font-face {
     font-family: 'Palatino LT Std Medium Italic';
-    src: url('/fonts/Palatino LT Std Medium Italic.otf') format('opentype');
+    src: url('../fonts/Palatino LT Std Medium Italic.otf') format('opentype');
 }
 
 @font-face {
     font-family: 'Palatino LT Std Black';
-    src: url('/fonts/Palatino LT Std Black.otf') format('opentype');
+    src: url('../fonts/Palatino LT Std Black.otf') format('opentype');
 }
 
 @font-face {
     font-family: 'Palatino LT Std Black Italic';
-    src: url('/fonts/Palatino LT Std Black Italic.otf') format('opentype');
+    src: url('../fonts/Palatino LT Std Black Italic.otf') format('opentype');
 }
 @font-face {
     font-family: 'Dialog Cond SemiBold Regular';

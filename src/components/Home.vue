@@ -8,12 +8,10 @@ import {ArrowLeftIcon, ArrowRightIcon, DocumentArrowDownIcon, TrashIcon} from "@
 import Editor from '@tinymce/tinymce-vue'
 import {RadioGroup, RadioGroupOption} from "@headlessui/vue";
 import {useCanvasHelper} from "../helpers/canvas.js";
-import {computed, getCurrentInstance, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 import {useBackgrounds} from "../config/backgrounds.js";
 import {useCardBacks} from "../config/card_backs.js";
-import html2canvas from "html2canvas-pro";
-import Konva from "konva";
-
+import {toPng} from "html-to-image";
 
 const types = useTypes();
 const capitalizeFirstLetter = function (val) {
@@ -88,7 +86,6 @@ const isFieldShown = (fieldId) => {
 
   const field = selectedType.fields.find(f => f.id === fieldId);
   if (!field) {
-    console.log(fieldId);
     fields[fieldId].value = '';
     return false;
   }
@@ -198,6 +195,7 @@ const buttons = [
 const tinyMCEConfig = {
   selector: 'textarea#cardText',
   license_key: 'gpl',
+  pad_empty_with_br: true,
   // x = 53
   // y = 406
   resize: false,
@@ -215,7 +213,7 @@ const tinyMCEConfig = {
   content_css: (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : ""),
   content_style: `
     @import url('tinymce/fonts.css');
-  `,setup: (editor) => {
+  `, setup: (editor) => {
     buttons.forEach((button) => {
       editor.ui.registry.addButton('custom_button_' + button.icon, {
         text: button.text,
@@ -232,10 +230,6 @@ const tinyMCEConfig = {
     });
   }
 };
-
-const cardTextImage = new Konva.Image(
-    getConfig('cardText')
-);
 
 const scaledFontsize = function (text, fontSize, fontface, desiredWidth) {
   const c = document.createElement('canvas');
@@ -264,22 +258,18 @@ const scaledFontsize = function (text, fontSize, fontface, desiredWidth) {
 }
 
 const downloadImage = function () {
-  cardTextImage.image('');
-  // convert DOM into image
-  html2canvas(document.querySelector('#renderedCardText'), {
-    scale: 1,
-    width: 345,
-    height: 135,
-    backgroundColor: 'rgba(0,0,0,0)',
-  }).then((canvas) => {
-    canvasHelper.backgroundLayer.add(cardTextImage);
-    // show it inside Konva.Image
-    cardTextImage.image(canvas);
-
-    downloadURI(stage.value.getStage().toDataURL({pixelRatio: 1}), (cardName.value || 'card') + '.png');
-
-    cardTextImage.image('');
-  });
+  toPng(document.querySelector('.cardParent'), {
+    width: 450,
+    canvasWidth: 450,
+    height: 628,
+    canvasHeight: 628,
+  })
+      .then((dataUrl) => {
+        downloadURI(dataUrl, (cardName.value || 'card') + '.png');
+      })
+      .catch((err) => {
+        console.error('oops, something went wrong!', err);
+      });
 }
 const downloadURI = function (uri, name) {
   const link = document.createElement('a');
@@ -1126,7 +1116,6 @@ onUnmounted(() => {
             >
               <v-layer id="artwork" ref="artwork"></v-layer>
               <v-layer id="background" ref="background"></v-layer>
-              <v-layer id="textLayer" ref="textLayer"></v-layer>
               <v-layer id="text">
                 <v-text v-if="cardName" :fontSize="nameFontSize" :text="cardName" v-bind="getConfig('cardName')"></v-text>
                 <v-text v-if="cardCost" :text="cardCost" v-bind="getConfig('cardCost')"></v-text>
@@ -1136,18 +1125,18 @@ onUnmounted(() => {
                 <v-text v-if="cardHeroIntellect" :text="cardHeroIntellect" v-bind="getConfig('cardHeroIntellect')"></v-text>
                 <v-text
                     :fontSize="typeTextFontSize"
+                    :height="23"
                     :text="cardTypeText"
+                    :width="217.2"
                     :x="116.3"
                     :y="562.55"
-                    :width="217.2"
-                    :height="23"
-                    fontFamily="Amanda Std Regular"
-                    verticalAlign="middle"
                     align="center"
                     fill="black"
+                    fontFamily="Amanda Std Regular"
+                    verticalAlign="middle"
                 ></v-text>
               </v-layer>
-              <v-layer id="footer" ref="footer" :config="configKonva">
+              <v-layer id="footer" ref="footer">
                 <v-image v-if="cardRarity" :text="cardRarity" v-bind="getConfig('cardRarity')"></v-image>
               </v-layer>
               <v-layer id="footertext">
