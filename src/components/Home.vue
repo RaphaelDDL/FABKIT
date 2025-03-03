@@ -213,8 +213,9 @@ const tinyMCEConfig = {
   branding: false,
   skin: (window.matchMedia("(prefers-color-scheme: dark)").matches ? "oxide-dark" : "oxide"),
   content_css: (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : ""),
-  content_style: "@import url('tinymce/fonts.css');body { font-family: Palatino LT Std Light; }",
-  setup: (editor) => {
+  content_style: `
+    @import url('tinymce/fonts.css');
+  `,setup: (editor) => {
     buttons.forEach((button) => {
       editor.ui.registry.addButton('custom_button_' + button.icon, {
         text: button.text,

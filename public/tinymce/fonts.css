@@ -9,6 +9,65 @@
 }
 
 @font-face {
+    font-family: 'Palatino LT Std Bold';
+    src: url('/fonts/Palatino LT Std Bold.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Palatino LT Std Bold Italic';
+    src: url('/fonts/Palatino LT Std Bold Italic.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Palatino LT Std Light Italic';
+    src: url('/fonts/Palatino LT Std Light Italic.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Palatino LT Std Medium';
+    src: url('/fonts/Palatino LT Std Medium.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Palatino LT Std Medium Italic';
+    src: url('/fonts/Palatino LT Std Medium Italic.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Palatino LT Std Black';
+    src: url('/fonts/Palatino LT Std Black.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Palatino LT Std Black Italic';
+    src: url('/fonts/Palatino LT Std Black Italic.otf') format('opentype');
+}
+@font-face {
     font-family: 'Dialog Cond SemiBold Regular';
     src: url('../fonts/Dialog Cond SemiBold Regular.woff2') format('truetype');
+}
+
+body {
+    font-family: 'Palatino LT Std Light', serif;
+}
+
+/* Override TinyMCE's default bold behavior */
+strong, b {
+    font-family: 'Palatino LT Std Medium', serif !important;
+    font-weight: normal !important;
+}
+
+/* Ensure strong inside a paragraph is styled correctly */
+p strong, p b {
+    font-family: 'Palatino LT Std Medium', serif !important;
+    font-weight: normal !important;
+}
+
+/* Handle cases where TinyMCE uses spans with inline styles */
+span[style*="font-weight: bold"],
+span[style*="font-weight: bolder"],
+[data-mce-style*="font-weight: bold"],
+[data-mce-style*="font-weight: bolder"] {
+    font-family: 'Palatino LT Std Medium', serif !important;
+    font-weight: normal !important;
 }
