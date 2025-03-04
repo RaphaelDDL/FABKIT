@@ -358,7 +358,7 @@ const switchBackground = function (dir) {
   const available = availableBackgrounds.value;
   if (dir === 'next') {
     backgroundIndex.value = clamp(
-        (backgroundIndex.value - 1 + available.length) % available.length,
+        (backgroundIndex.value + 1) % available.length,
         0,
         available.length - 1
     );
