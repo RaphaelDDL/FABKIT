@@ -481,10 +481,10 @@ const types = [
                 id: "cardSecondaryClassCustom",
             },
             {
-                id: "cardResourceSubtype",
+                id: "cardTokenSubtype",
             },
             {
-                id: "cardResourceSubtypeCustom",
+                id: "cardTokenSubtypeCustom",
             },
             {
                 id: "cardLife",
