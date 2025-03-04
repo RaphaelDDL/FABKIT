@@ -358,7 +358,7 @@ const switchBackground = function (dir) {
   const available = availableBackgrounds.value;
   if (dir === 'next') {
     backgroundIndex.value = clamp(
-        (backgroundIndex.value - 1 + available.length) % available.length,
+        (backgroundIndex.value + 1) % available.length,
         0,
         available.length - 1
     );
@@ -1117,7 +1117,13 @@ onUnmounted(() => {
               <v-layer id="artwork" ref="artwork"></v-layer>
               <v-layer id="background" ref="background"></v-layer>
               <v-layer id="text">
-                <v-text v-if="cardName" :fontSize="nameFontSize" :text="cardName" v-bind="getConfig('cardName')"></v-text>
+                <v-text v-if="cardName" v-bind="{
+                  ...getConfig('cardName'),
+                  ...{
+                    text: cardName,
+                    fontSize: nameFontSize
+                  }
+                }"></v-text>
                 <v-text v-if="cardCost" :text="cardCost" v-bind="getConfig('cardCost')"></v-text>
                 <v-text v-if="cardDefense" :text="cardDefense" v-bind="getConfig('cardDefense')"></v-text>
                 <v-text v-if="cardPower" :text="cardPower" v-bind="getConfig('cardPower')"></v-text>
