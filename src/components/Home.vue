@@ -4,7 +4,7 @@ import {PhotoIcon} from '@heroicons/vue/24/solid'
 import {ChevronDownIcon} from '@heroicons/vue/16/solid'
 import useTypes from "../config/types.js";
 import {useFields} from "../helpers/fields.js";
-import {ArrowLeftIcon, ArrowRightIcon, DocumentArrowDownIcon, TrashIcon} from "@heroicons/vue/24/solid/index.js";
+import {ArrowLeftIcon, ArrowRightIcon, DocumentArrowDownIcon, TrashIcon, PrinterIcon} from "@heroicons/vue/24/solid/index.js";
 import Editor from '@tinymce/tinymce-vue'
 import {RadioGroup, RadioGroupOption} from "@headlessui/vue";
 import {useCanvasHelper} from "../helpers/canvas.js";
@@ -271,6 +271,18 @@ const downloadImage = function () {
         console.error('oops, something went wrong!', err);
       });
 }
+
+const printPage = function () {
+  const stageInstance = stage.value.getStage();
+  stage.value.getStage().scale({x:0.52913385826,y:0.52913385826});
+  stageInstance.batchDraw();
+  setTimeout(() => {
+    window.print();
+    stageInstance.scale({x:1,y:1});
+    stageInstance.batchDraw();
+  }, 100);
+}
+
 const downloadURI = function (uri, name) {
   const link = document.createElement('a');
   link.download = name;
@@ -534,7 +546,7 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <div class="w-full mb-3">
+    <div class="w-full mb-3 print:hidden">
       <label class="block text-sm/6 font-medium text-gray-900 dark:text-white" for="location">Type</label>
       <div class="mt-2 grid grid-cols-1">
         <select id="cardType" v-model="cardType"
@@ -551,7 +563,7 @@ onUnmounted(() => {
       </div>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-[2fr_1fr]">
-      <div class="container mx-auto p-6">
+      <div class="container mx-auto p-6 print:hidden">
         <form>
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             <div v-if="isFieldShown('cardPitch')" class="">
@@ -1092,8 +1104,8 @@ onUnmounted(() => {
       </div>
       <div v-show="cardType" class="flex flex-col items-center">
         <div>
-          <label class="block text-sm/6 font-medium text-gray-900 dark:text-white text-center" for="cardBackLabel">Select Card Background</label>
-          <div class="w-full flex justify-between items-center mt-2 mb-4 col-start-2">
+          <label class="block text-sm/6 font-medium text-gray-900 dark:text-white text-center print:hidden" for="cardBackLabel">Select Card Background</label>
+          <div class="w-full flex justify-between items-center mt-2 mb-4 col-start-2 print:hidden">
             <button :disabled="loadingBackground" class="button-primary px-3.5 py-2.5" type="button"
                     v-on:click="() => switchBackground('next')">
               <ArrowLeftIcon aria-hidden="true" class="-mr-0.5 size-5"/>
@@ -1151,10 +1163,14 @@ onUnmounted(() => {
             </v-stage>
           </div>
 
-          <div class="flex justify-center mt-2">
+          <div class="flex justify-center mt-2 print:hidden gap-4">
             <button class="inline-flex items-center gap-x-1.5 button-primary px-3.5 py-2.5" type="button" v-on:click="() => downloadImage()">
               Download Card
               <DocumentArrowDownIcon aria-hidden="true" class="-mr-0.5 size-5"/>
+            </button>
+            <button class="inline-flex items-center gap-x-1.5 button-primary px-3.5 py-2.5" type="button" v-on:click="() => printPage()">
+              Print
+              <PrinterIcon aria-hidden="true" class="-mr-0.5 size-5"/>
             </button>
           </div>
         </div>
