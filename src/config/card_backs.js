@@ -125,7 +125,10 @@ const card_backs = {
                 verticalAlign: "middle",
             },
             cardUploadedArtwork: {
+                width: 390,
                 height: 628,
+                x: 30,
+                y: 76,
             },
         },
         demi_hero: {
@@ -150,7 +153,10 @@ const card_backs = {
                 verticalAlign: "middle",
             },
             cardUploadedArtwork: {
+                width: 390,
                 height: 628,
+                x: 30,
+                y: 76,
             },
         },
     },
@@ -248,12 +254,18 @@ const card_backs = {
         },
         hero: {
             cardUploadedArtwork: {
+                width: 390,
                 height: 628,
+                x: 30,
+                y: 76,
             },
         },
         demi_hero: {
             cardUploadedArtwork: {
+                width: 390,
                 height: 628,
+                x: 30,
+                y: 76,
             },
         }
     }
