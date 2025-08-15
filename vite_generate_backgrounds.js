@@ -1,49 +1,67 @@
-import fs from 'fs';
+import {readdir, unlink, createWriteStream, promises} from 'fs';
+import path from 'path';
+import http from 'http';
+import https from 'https';
 
-function getFiles(dir, files_) {
-    files_ = files_ || [];
-    const files = fs.readdirSync(dir);
-    for (const i in files) {
-        const name = dir + '/' + files[i];
-        if (fs.statSync(name).isDirectory()) {
-            getFiles(name, files_);
-        } else {
-            if (name.search(".png") !== -1) {
-                files_.push(name);
-            }
-        }
+
+const getCardbacks = async function(url) {
+    const response = await fetch(url);
+    const cardbacks = await response.json();
+    let downloads = [];
+    cardbacks.forEach((cardback) => {
+        cardback.images.forEach((cardbackImage) => {
+            const imgUrl = cardbackImage.fileName.split('/').pop();
+            const cardbackLocation = './public/img/cardbacks/generated/' + imgUrl;
+            downloads.push({url: cardbackImage.fileName, fileLocation: cardbackLocation});
+
+            cardbackImage.url = 'img/cardbacks/generated/' + imgUrl;
+            delete cardbackImage.fileName;
+        })
+    })
+
+    const downloadPromises = [];
+    for (const download of downloads) {
+        await promises.access(download.fileLocation)
+            .then(() => true)
+            .catch(() => downloadPromises.push(downloadFileFromURL(download.url, download.fileLocation)));
     }
-    return files_;
+
+    await Promise.all(downloadPromises);
+
+    return `const cardbacks = ${JSON.stringify(cardbacks)};
+export function useCardBacks() {
+    return cardbacks;
+}`;
 }
 
-let res = {};
-
-getFiles('public/img/cardbacks').forEach((file) => {
-    let path = file.replace("public/img/cardbacks", "");
-    const sub1re = /^\/(.*)?\/(.*.png)$/;
-    let sub1match = path.match(sub1re);
-    let [sub1, sub2] = sub1match[1].split('/');
-    if (sub2) {
-        if (!res[sub1]) {
-            res[sub1] = {};
+async function downloadFileFromURL(url, fileLocation) {
+    return await new Promise((resolve, reject) => {
+        let evalledHttp = http;
+        if (url.startsWith('https')) {
+            evalledHttp = https;
         }
-        if (!res[sub1][sub2]) {
-            res[sub1][sub2] = [];
-        }
-        res[sub1][sub2].push('img/cardbacks/' + sub1match[1] + '/' + sub1match[2]);
-        return;
-    }
-    if (!res[sub1]) {
-        res[sub1] = [];
-    }
-    if(!res[sub1][1]) {
-        res[sub1][1] = [];
-    }
-    res[sub1][1].push('img/cardbacks/' + sub1match[1] + '/' + sub1match[2]);
-})
-const backgrounds = `const backgrounds = ${JSON.stringify(res)};
-export function useBackgrounds() {
-    return backgrounds;
-}`;
+        evalledHttp.get(url, async (response) => {
+            const code = response.statusCode ?? 0
 
-export default backgrounds;
+            if (code >= 400) {
+                return reject(new Error(response.statusMessage))
+            }
+
+            // save the file to disk
+            const fileWriter = createWriteStream(fileLocation)
+                .on('finish', () => {
+                    resolve({
+                        fileLocation,
+                        contentType: response.headers['content-type'],
+                    })
+                })
+
+            response.pipe(fileWriter)
+        })
+            .on('error', (error) => {
+                reject(error)
+            })
+    })
+}
+
+export default getCardbacks;

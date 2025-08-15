@@ -13,20 +13,18 @@
         <link rel="manifest" href="/site.webmanifest" />
         <meta content="#603cba" name="msapplication-TileColor">
         <meta content="#ffffff" name="theme-color">
-    <link rel="preload" href="/fonts/Amanda Std Regular.otf" as="font" type="font/otf" crossorigin>
-    <link rel="preload" href="/fonts/Palatino LT Std Light.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Palatino LT Std Bold.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Palatino LT Std Bold Italic.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Palatino LT Std Light Italic.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Palatino LT Std Medium.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Palatino LT Std Medium Italic.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Palatino LT Std Black.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Palatino LT Std Black Italic.otf" as="font" type="font/otf" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/Dialog Cond SemiBold Regular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/tinymce/fonts.css" as="style" />
-</head>
+    </head>
 <body class="h-full bg-white dark:bg-dark">
 <div id="app"></div>
 <script src="src/main.js" type="module"></script>
+<script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+<script>
+    kofiWidgetOverlay.draw('fabkit', {
+        'type': 'floating-chat',
+        'floating-chat.donateButton.text': 'Support Us',
+        'floating-chat.donateButton.background-color': '#323842',
+        'floating-chat.donateButton.text-color': '#fff'
+    });
+</script>
 </body>
 </html>

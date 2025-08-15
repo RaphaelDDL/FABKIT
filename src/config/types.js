@@ -103,9 +103,6 @@ const types = [
                 id: "cardName",
             },
             {
-                id: "cardCost",
-            },
-            {
                 id: "cardText",
             },
             {
@@ -374,6 +371,7 @@ const types = [
     {
         type: 'mentor',
         label: 'Mentor',
+        disabled: true,
         fields: [
             {
                 id: "cardName",
