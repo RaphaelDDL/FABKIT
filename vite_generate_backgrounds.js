@@ -1,5 +1,4 @@
-import {readdir, unlink, createWriteStream, promises} from 'fs';
-import path from 'path';
+import {createWriteStream, promises} from 'fs';
 import http from 'http';
 import https from 'https';
 
