@@ -103,9 +103,9 @@ const downloadURI = function (uri, name) {
   link.remove();
 }
 
-const [noCostImage] = useImage('src/assets/symbol_nocost.png');
-const [powerImage] = useImage('src/assets/cardsymbol_power.svg');
-const [defenseImage] = useImage('src/assets/cardsymbol_defense.svg');
+const [noCostImage] = useImage('/FABKIT/img/symbols/symbol_nocost.png');
+const [powerImage] = useImage('/FABKIT/img/symbols/cardsymbol_power.svg');
+const [defenseImage] = useImage('/FABKIT/img/symbols/cardsymbol_defense.svg');
 </script>
 
 <template>
