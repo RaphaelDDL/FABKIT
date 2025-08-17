@@ -1,6 +1,6 @@
 # FABKIT
 
-> **Your Flesh and Blood Toolbox** - Create authentic custom cards for the Flesh and Blood TCG
+> **Your Flesh and Blood Toolbox** 
 
 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](LICENSE)
 [![Built with Vue](https://img.shields.io/badge/Built%20with-Vue%203-4FC08D.svg)](https://vuejs.org/)
