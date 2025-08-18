@@ -578,5 +578,7 @@ export function useCard() {
         footertextRight,
         flatFooterText,
         dentedFooterText,
+        containerElement,
+        contentElement,
     };
 }

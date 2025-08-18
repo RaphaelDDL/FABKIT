@@ -43,6 +43,8 @@ const {
   flatFooterText,
   dentedFooterText,
   loadingBackground,
+  containerElement,
+  contentElement,
 } = useCard();
 
 const {cardRarities} = useCardRarities();
