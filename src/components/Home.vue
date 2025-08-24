@@ -265,8 +265,8 @@ const [defenseImage] = useImage('/FABKIT/img/symbols/cardsymbol_defense.svg');
                   </div>
                 </template>
               </div>
-              <div v-if="isFieldShown('cardTalent')" class="">
-                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardTalent">Class</label>
+              <div v-if="isFieldShown('cardClass')" class="">
+                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardClass">Class</label>
                 <div class="mt-2 grid grid-cols-1">
                   <select
                       id="cardClass"
@@ -295,12 +295,12 @@ const [defenseImage] = useImage('/FABKIT/img/symbols/cardsymbol_defense.svg');
                       aria-hidden="true"
                       class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"/>
                 </div>
-                <template v-if="fields.cardTalent === 'Custom'">
-                  <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardTalentCustom">Custom class</label>
+                <template v-if="fields.cardClass === 'Custom'">
+                  <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardClassCustom">Custom class</label>
                   <div class="mt-2">
                     <div
                         class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                      <input id="cardTalentCustom" v-model="fields.cardTalentCustom"
+                      <input id="cardClassCustom" v-model="fields.cardClassCustom"
                              class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                              placeholder="Enter custom class" type="text">
                     </div>
