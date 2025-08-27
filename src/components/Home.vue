@@ -13,7 +13,6 @@ import {
 } from "@heroicons/vue/24/solid/index.js";
 import Editor from '@tinymce/tinymce-vue'
 import {RadioGroup, RadioGroupOption} from "@headlessui/vue";
-import {toPng} from "html-to-image";
 import useTinyMCEConfig from "../config/tinyMCE.js";
 import {useImage} from "vue-konva";
 import ButtonDropdown from "./ButtonDropdown.vue";
@@ -31,7 +30,7 @@ const {
   footerTextFontSize,
   filteredAvailableCardbacks,
   backgroundIndex,
-  cardTextStyleClass,
+  cardTextStyle,
   handleStyleToggle,
   cardRarityImage,
   stage,
@@ -45,14 +44,14 @@ const {
   loadingBackground,
   containerElement,
   contentElement,
+  stageContainerRef,
+  stageWidth,
+  stageHeight,
+  scale,
+  downloadImage,
 } = useCard();
 
 const {cardRarities} = useCardRarities();
-
-const configKonva = {
-  width: 450,
-  height: 628,
-};
 
 const readFile = function readFile(event) {
 
@@ -69,28 +68,13 @@ const readFile = function readFile(event) {
 
 const tinyMCEConfig = useTinyMCEConfig(fields);
 
-const downloadImage = function () {
-  toPng(document.querySelector('.cardParent'), {
-    width: 450,
-    canvasWidth: 450,
-    height: 628,
-    canvasHeight: 628,
-  })
-      .then((dataUrl) => {
-        downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
-      })
-      .catch((err) => {
-        console.error('oops, something went wrong!', err);
-      });
-}
-
 const printPage = function () {
   const stageInstance = stage.value.getStage();
-  stage.value.getStage().scale({x:0.52913385826,y:0.52913385826});
+  stage.value.getStage().scale({x: 0.52913385826, y: 0.52913385826});
   stageInstance.batchDraw();
   setTimeout(() => {
     window.print();
-    stageInstance.scale({x:1,y:1});
+    stageInstance.scale({x: 1, y: 1});
     stageInstance.batchDraw();
   }, 100);
 }
@@ -105,7 +89,7 @@ const downloadURI = function (uri, name) {
   link.remove();
 }
 
-const [noCostImage] = useImage('/img/symbols/symbol_nocost.png');
+const [noResourceImage] = useImage('/img/symbols/symbol_nocost.png');
 const [powerImage] = useImage('/img/symbols/cardsymbol_power.svg');
 const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
 </script>
@@ -118,7 +102,6 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
           <h2 class="text-4xl font-semibold tracking-tight text-balance text-primary dark:text-white sm:text-5xl">Start creating!</h2>
           <div class="mt-10 flex items-center justify-center gap-x-6 fade-in-fwd">
             <ButtonDropdown
-                placeholder="Select Card Type"
                 :options="types.sort((a, b) => a.label.localeCompare(b.label)).map((t) => {
                 return {
                  title: t.label,
@@ -127,6 +110,7 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
                  disabled: t.disabled,
                 }
               })"
+                placeholder="Select Card Type"
                 @update:modelValue="fields.cardType = $event.type"
             >
               <div slot="icon"></div>
@@ -134,12 +118,12 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
           </div>
         </div>
       </div>
-      <svg viewBox="0 0 1024 1024" class="absolute top-1/2 left-1/2 -z-10 size-256 -translate-x-1/2 mask-[radial-gradient(closest-side,white,transparent)] fade-in-bottom" aria-hidden="true">
-        <circle cx="512" cy="512" r="512" fill="url(#8d958450-c69f-4251-94bc-4e091a323369)" fill-opacity="0.7" />
+      <svg aria-hidden="true" class="absolute top-1/2 left-1/2 -z-10 size-256 -translate-x-1/2 mask-[radial-gradient(closest-side,white,transparent)] fade-in-bottom" viewBox="0 0 1024 1024">
+        <circle cx="512" cy="512" fill="url(#8d958450-c69f-4251-94bc-4e091a323369)" fill-opacity="0.7" r="512"/>
         <defs>
           <radialGradient id="8d958450-c69f-4251-94bc-4e091a323369">
-            <stop stop-color="#A6864A" />
-            <stop offset="1" stop-color="#A6864A" />
+            <stop stop-color="#A6864A"/>
+            <stop offset="1" stop-color="#A6864A"/>
           </radialGradient>
         </defs>
       </svg>
@@ -148,11 +132,11 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
       <div v-show="fields.cardType" class="w-full mb-3 print:hidden">
         <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardType">Type</label>
         <div class="mt-2 grid grid-cols-1">
-          <select id="cardType" v-model="fields.cardType"
-                  ref="fields.cardTypeSelect"
+          <select id="cardType" ref="fields.cardTypeSelect"
+                  v-model="fields.cardType"
                   class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white dark:bg-dark py-1.5 pr-8 pl-3 text-base text-primary dark:text-white outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6"
                   name="fields.cardType">
-            <option v-for="type in types.sort((a, b) => a.label.localeCompare(b.label))" :value="type.type" :disabled="type.disabled">
+            <option v-for="type in types.sort((a, b) => a.label.localeCompare(b.label))" :disabled="type.disabled" :value="type.type">
               {{ type.label }}
             </option>
           </select>
@@ -195,12 +179,12 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
                   </div>
                 </div>
               </div>
-              <div v-if="isFieldShown('cardCost')" class="">
-                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardCost">Cost</label>
+              <div v-if="isFieldShown('cardResource')" class="">
+                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardResource">Resource</label>
                 <div class="mt-2">
                   <div
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardCost" v-model="fields.cardCost"
+                    <input id="cardResource" v-model="fields.cardResource"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                            maxlength="2" type="text">
                   </div>
@@ -213,7 +197,7 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
                     <input id="cardPower" v-model="fields.cardPower"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-                           type="number">
+                           type="text">
                   </div>
                 </div>
               </div>
@@ -224,7 +208,7 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
                     <input id="cardHeroIntellect" v-model="fields.cardHeroIntellect"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-                           type="number">
+                           type="text">
                   </div>
                 </div>
               </div>
@@ -641,7 +625,7 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
                     <input id="cardDefense" v-model="fields.cardDefense"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-                           type="number">
+                           type="text">
                   </div>
                 </div>
               </div>
@@ -652,7 +636,7 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
                       class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
                     <input id="cardLife" v-model="fields.cardLife"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-                           type="number">
+                           type="text">
                   </div>
                 </div>
               </div>
@@ -699,10 +683,10 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
             <div class="button-cover">
               <div class="button r">
                 <input
-                    type="checkbox"
+                    :checked="selectedStyle === 'flat'"
                     class="checkbox"
                     name="cardStyle"
-                    :checked="selectedStyle === 'flat'"
+                    type="checkbox"
                     @change="handleStyleToggle"
                 />
                 <div class="knobs"></div>
@@ -741,82 +725,89 @@ const [defenseImage] = useImage('/img/symbols/cardsymbol_defense.svg');
             </button>
           </div>
 
-          <div class="flex flex-col w-full overflow-x-auto xs:overflow-none xs:items-center">
+          <div class="flex flex-col w-full xs:items-center">
             <div class="cardParent">
-                <div id="renderedCardText" ref="containerElement" :class="cardTextStyleClass">
+              <div id="renderedCardText" ref="containerElement" :style="cardTextStyle">
                 <div v-if="fields" id="renderedContent" ref="contentElement" v-html="fields.cardText"></div>
               </div>
-              <v-stage
-                  ref="stage"
-                  :config="configKonva"
-              >
-                <v-layer id="artwork" ref="artwork"></v-layer>
-                <v-layer id="background" ref="background"></v-layer>
-                <v-layer>
-                  <v-image
-                      v-if="fields.cardType === 'block'"
-                      :config="{
-                       ...getConfig('noCostImage'),
-                       image: noCostImage,
+              <div ref="stageContainerRef" style="width: 100%;height:100%;">
+                <v-stage
+                    ref="stage"
+                    :config="{
+                    width: stageWidth,
+                    height: stageHeight,
+                    scaleX: scale,
+                    scaleY: scale
+                  }"
+                >
+                  <v-layer id="artwork" ref="artwork"></v-layer>
+                  <v-layer id="background" ref="background"></v-layer>
+                  <v-layer>
+                    <v-image
+                        v-if="fields.cardType === 'block'"
+                        :config="{
+                       ...getConfig('noResourceImage'),
+                       image: noResourceImage,
                      }"
-                  />
-                  <v-image
-                      v-if="fields.cardPower"
-                      :config="{
+                    />
+                    <v-image
+                        v-if="fields.cardPower !== ''"
+                        :config="{
                        ...getConfig('powerImage'),
                        image: powerImage,
                      }"
-                  />
-                  <v-image
-                      v-if="fields.cardDefense"
-                      :config="{
+                    />
+                    <v-image
+                        v-if="fields.cardDefense !== ''"
+                        :config="{
                        ...getConfig('defenseImage'),
                        image: defenseImage,
                      }"
-                  />
-                </v-layer>
-                <v-layer id="text">
-                  <v-text v-show="fields.cardName" v-bind="{
+                    />
+                  </v-layer>
+                  <v-layer id="text">
+                    <v-text v-show="fields.cardName" v-bind="{
                   ...getConfig('cardName'),
                   ...{
                     text: fields.cardName,
                     fontSize: nameFontSize
                   }
                 }"></v-text>
-                  <v-text v-show="fields.cardCost" :text="fields.cardCost" v-bind="getConfig('cardCost')"></v-text>
-                  <v-text v-show="fields.cardDefense" :text="fields.cardDefense" v-bind="getConfig('cardDefense')"></v-text>
-                  <v-text v-show="fields.cardPower" :text="fields.cardPower" v-bind="getConfig('cardPower')"></v-text>
-                  <v-text v-show="fields.cardLife" :text="fields.cardLife" v-bind="getConfig('cardLife')"></v-text>
-                  <v-text v-show="fields.cardHeroIntellect" :text="fields.cardHeroIntellect" v-bind="getConfig('cardHeroIntellect')"></v-text>
-                  <v-text
-                      :text="cardTypeText"
-                      v-bind="getConfig('cardTypeText')"
-                      :fontSize="typeTextFontSize"
-                  ></v-text>
-                </v-layer>
-                <v-layer id="footer" ref="footer">
-                  <v-image v-if="fields.cardRarity" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
-                  <v-text
-                      ref="footertext"
-                      :fontSize="footerTextFontSize"
-                      :text="dentedFooterText"
-                      v-bind="getConfig('cardFooterText')"
-                  />
-                  <v-text
-                      v-if="selectedStyle === 'flat'"
-                      ref="footertextRight"
-                      :fontSize="footerTextFontSize"
-                      :text="flatFooterText"
-                      v-bind="getConfig('cardFooterTextRight')"
-                  />
+                    <v-text v-if="fields.cardResource !== ''" :text="fields.cardResource" v-bind="getConfig('cardResource')"></v-text>
+                    <v-text v-if="fields.cardDefense !== ''" :text="fields.cardDefense" v-bind="getConfig('cardDefense')"></v-text>
+                    <v-text v-if="fields.cardPower !== ''" :text="fields.cardPower" v-bind="getConfig('cardPower')"></v-text>
+                    <v-text v-if="fields.cardLife !== ''" :text="fields.cardLife" v-bind="getConfig('cardLife')"></v-text>
+                    <v-text v-if="fields.cardHeroIntellect !== ''" :text="fields.cardHeroIntellect" v-bind="getConfig('cardHeroIntellect')"></v-text>
+                    <v-text
+                        :fontSize="typeTextFontSize"
+                        :text="cardTypeText"
+                        v-bind="getConfig('cardTypeText')"
+                    ></v-text>
+                  </v-layer>
+                  <v-layer id="footer" ref="footer">
+                    <v-image v-if="fields.cardRarity" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
+                    <v-text
+                        ref="footertext"
+                        :fontSize="footerTextFontSize"
+                        :text="dentedFooterText"
+                        v-bind="getConfig('cardFooterText')"
+                    />
+                    <v-text
+                        v-if="selectedStyle === 'flat'"
+                        ref="footertextRight"
+                        :fontSize="footerTextFontSize"
+                        :text="flatFooterText"
+                        v-bind="getConfig('cardFooterTextRight')"
+                    />
 
-                  <!-- Copyright overlay -->
-                  <v-text
-                      text="©"
-                      v-bind="getConfig('copyrightOverlay')"
-                  />
-                </v-layer>
-              </v-stage>
+                    <!-- Copyright overlay -->
+                    <v-text
+                        text="©"
+                        v-bind="getConfig('copyrightOverlay')"
+                    />
+                  </v-layer>
+                </v-stage>
+              </div>
             </div>
           </div>
           <div class="flex justify-center mt-2 print:hidden gap-4">

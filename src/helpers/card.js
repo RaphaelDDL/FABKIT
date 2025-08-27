@@ -6,6 +6,7 @@ import useTypes from "../config/types.js";
 import {useCardRarities} from "./cardRarities.js";
 import {useCanvasHelper} from "./canvas.js";
 import {useTextConfig} from "../config/text.js";
+import {toPng} from "html-to-image";
 
 const {clamp} = useMath();
 
@@ -18,7 +19,7 @@ export function useCard() {
         cardType: '',
         cardPitch: '',
         cardName: '',
-        cardCost: '',
+        cardResource: '',
         cardText: '',
         cardPower: '',
         cardHeroIntellect: '',
@@ -207,9 +208,14 @@ export function useCard() {
         return 'flat';
     });
 
-    const cardTextStyleClass = computed(() => {
-        // Return the frame type as the CSS class name
-        return frameType.value; // This will be either 'flat' or 'dented'
+    const cardTextStyle = computed(() => {
+        let base = `transform: translateX(calc(-50% * ${scale.value}));height: calc(135px * ${scale.value});width: calc(345px * ${scale.value}););`
+        // Return the frame type CSS style
+        if (frameType.value === 'flat') {
+            return base + `top: calc(397.3px * ${scale.value});left: calc(50.165% * ${scale.value});`;
+        }
+
+        return base + `top:calc(408px * ${scale.value});left: calc(50% * ${scale.value});`
     });
 
     const cardBackSettings = useCardBackSettings();
@@ -369,6 +375,9 @@ export function useCard() {
     });
 
     const resizeText = ({element, minSize = frameTypeTextConfig.value.minFontSize, maxSize = frameTypeTextConfig.value.maxFontSize, step = frameTypeTextConfig.value.step, unit = 'px'}) => {
+        if (!element) {
+            return;
+        }
         const parent = element.parentNode;
         const maxHeight = parent.clientHeight;
 
@@ -379,12 +388,12 @@ export function useCard() {
 
         // Helper function to calculate line height based on font size
         const calculateLineHeight = (fontSize) => {
-            return (fontSize / frameTypeTextConfig.value.baseFontSize) * frameTypeTextConfig.value.baseLineHeight;
+            return ((fontSize / frameTypeTextConfig.value.baseFontSize) * frameTypeTextConfig.value.baseLineHeight) * scale.value;
         };
 
         // UPDATED: Apply styles to element and paragraphs
         const applyStyles = (size) => {
-            element.style.fontSize = `${size}${unit}`;
+            element.style.fontSize = `${(size * scale.value)}${unit}`;
             element.style.lineHeight = `${calculateLineHeight(size)}${unit}`;
 
             // Apply paragraph spacing
@@ -394,7 +403,7 @@ export function useCard() {
                 p.style.padding = '0';
                 // Add margin-top to all paragraphs except the first
                 if (index > 0) {
-                    p.style.marginTop = `${calculateLineHeight(size) * frameTypeTextConfig.value.paragraphSpacing}${unit}`;
+                    p.style.marginTop = `${(calculateLineHeight(size) * frameTypeTextConfig.value.paragraphSpacing)}${unit}`;
                 }
             });
         };
@@ -493,6 +502,10 @@ export function useCard() {
     });
 
     watch(() => fields.cardType, (newCardType) => {
+        nextTick().then(() => {
+            updateSize();
+            recalculateRatio();
+        });
         if (!newCardType) return;
         canvasHelper.drawBackground(currentBackground.value);
         canvasHelper.drawUploadedArtwork(fields.cardUploadedArtwork, getConfig('cardUploadedArtwork'));
@@ -508,19 +521,70 @@ export function useCard() {
     }, {deep: true});
 
 
+    // Define virtual size for our scene
+    const sceneWidth = 450;
+    const sceneHeight = 628;
+
+    // Reactive references
+    const stageContainerRef = ref(null);
+    const scale = ref(1);
+
+    // Computed properties for stage dimensions
+    const stageWidth = computed(() => sceneWidth * scale.value);
+    const stageHeight = computed(() => sceneHeight * scale.value);
+
+    // Function to handle resize
+    const updateSize = () => {
+        if (!stageContainerRef.value) return;
+
+        // Get container width
+        let containerWidth = stageContainerRef.value.offsetWidth;
+
+        if (0 === containerWidth) {
+            containerWidth = sceneWidth;
+        }
+
+        // Calculate scale
+        scale.value = containerWidth / sceneWidth;
+    };
 
     onMounted(() => {
         fields.cardRarity = 1;
         canvasHelper.artworkLayer = artwork.value.getStage();
         canvasHelper.backgroundLayer = background.value.getStage();
         canvasHelper.footerLayer = footer.value.getStage();
-    })
+        if (containerElement.value) {
+            containerElement.value.addEventListener('forceResize', () => {
+                nextTick().then(() => {
+                    updateSize();
+                    recalculateRatio();
+                });
+            });
+        }
+        updateSize();
+        recalculateRatio();
+        // Add event listener
+        window.addEventListener('resize', () => {
+            nextTick().then(() => {
+                updateSize();
+                recalculateRatio();
+            });
+        });
+    });
 
     onUnmounted(() => {
+        // Clean up
+        window.removeEventListener('resize', () => {
+            nextTick().then(() => {
+                updateSize();
+                recalculateRatio();
+            });
+        });
+
         fields.cardType = '';
         fields.cardPitch = '';
         fields.cardName = '';
-        fields.cardCost = '';
+        fields.cardResource = '';
         fields.cardText = '';
         fields.cardPower = '';
         fields.cardHeroIntellect = '';
@@ -552,6 +616,36 @@ export function useCard() {
         fields.cardUploadedArtwork = '';
         fields.cardFooterText = '';
     });
+
+
+    const downloadImage = function () {
+        const stageInstance = stage.value.getStage();
+        stageInstance.setWidth(450);
+        stageInstance.setHeight(628);
+        stageInstance.setScale(1, 1);
+        scale.value = 1;
+        stageInstance.batchDraw();
+        recalculateRatio();
+        nextTick(() => {
+            toPng(document.querySelector('.cardParent'), {
+                width: 450,
+                canvasWidth: 450,
+                height: 628,
+                canvasHeight: 628,
+            })
+                .then((dataUrl) => {
+                    downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
+                })
+                .catch((err) => {
+                    console.error('oops, something went wrong!', err);
+                }).finally(() => {
+                updateSize();
+                recalculateRatio();
+                stageInstance.batchDraw();
+            });
+        })
+    }
+
     return {
         types,
         fields,
@@ -565,7 +659,7 @@ export function useCard() {
         typeTextFontSize,
         footerTextFontSize,
         frameType,
-        cardTextStyleClass,
+        cardTextStyle,
         filteredAvailableCardbacks,
         backgroundIndex,
         handleStyleToggle,
@@ -580,5 +674,10 @@ export function useCard() {
         dentedFooterText,
         containerElement,
         contentElement,
+        stageContainerRef,
+        stageWidth,
+        stageHeight,
+        scale,
+        downloadImage,
     };
 }
