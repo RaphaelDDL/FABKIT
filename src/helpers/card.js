@@ -490,12 +490,9 @@ export function useCard() {
     const doLoading = async function (callback) {
         loadingBackground.value = true;
         const konvaStage = stage.value.getStage();
-        // if it takes longer than 100 ms to load => set visual indicator
-        setTimeout(() => {
-            if (loadingBackground.value === true) {
-                konvaStage.opacity(0.5)
-            }
-        }, 100);
+        if (loadingBackground.value === true) {
+            konvaStage.opacity(0.5)
+        }
 
         callback().finally(() => {
             loadingBackground.value = false;
@@ -691,5 +688,6 @@ export function useCard() {
         stageHeight,
         scale,
         downloadImage,
+        loadingBackground,
     };
 }
