@@ -663,26 +663,25 @@ export function useCard() {
         stageInstance.batchDraw();
         recalculateRatio();
         nextTick(() => {
-            toPng(document.querySelector('.cardParent'), {
-                width: 450,
-                canvasWidth: 450,
-                height: 628,
-                canvasHeight: 628,
-            })
-                .then((dataUrl) => {
-                    // make sure we wait for the canvas to be resized correctly
-                    setTimeout(() => {
-                        downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
-                    }, 250);
+            setTimeout(() => {
+                toPng(document.querySelector('.cardParent'), {
+                    width: 450,
+                    canvasWidth: 450,
+                    height: 628,
+                    canvasHeight: 628,
                 })
-                .catch((err) => {
-                    console.error('oops, something went wrong!', err);
-                }).finally(() => {
-                downloadingImage.value = false;
-                updateSize();
-                recalculateRatio();
-                stageInstance.batchDraw();
-            });
+                    .then((dataUrl) => {
+                        downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
+                    })
+                    .catch((err) => {
+                        console.error('oops, something went wrong!', err);
+                    }).finally(() => {
+                    downloadingImage.value = false;
+                    updateSize();
+                    recalculateRatio();
+                    stageInstance.batchDraw();
+                });
+            }, 300);
         })
     }
 
