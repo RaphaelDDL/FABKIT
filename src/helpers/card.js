@@ -670,7 +670,10 @@ export function useCard() {
                 canvasHeight: 628,
             })
                 .then((dataUrl) => {
-                    downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
+                    // make sure we wait for the canvas to be resized correctly
+                    setTimeout(() => {
+                        downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
+                    }, 250);
                 })
                 .catch((err) => {
                     console.error('oops, something went wrong!', err);
