@@ -697,26 +697,28 @@ export function useCard() {
         stageInstance.batchDraw();
         recalculateRatio();
         nextTick(() => {
-            toPng(document.querySelector('.cardParent'), {
-                width: 450,
-                canvasWidth: 450,
-                height: 628,
-                canvasHeight: 628,
-            })
-                .then((dataUrl) => {
-                    // Open in new tab instead of downloading
-                    const newWindow = window.open();
-                    newWindow.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;" alt="Generated Card">`);
-                    newWindow.document.title = fields.cardName || 'Generated Card';
+            setTimeout(() => {
+                toPng(document.querySelector('.cardParent'), {
+                    width: 450,
+                    canvasWidth: 450,
+                    height: 628,
+                    canvasHeight: 628,
                 })
-                .catch((err) => {
-                    console.error('oops, something went wrong!', err);
-                }).finally(() => {
-                downloadingImage.value = false;
-                updateSize();
-                recalculateRatio();
-                stageInstance.batchDraw();
-            });
+                    .then((dataUrl) => {
+                        // Open in new tab instead of downloading
+                        const newWindow = window.open();
+                        newWindow.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;" alt="Generated Card">`);
+                        newWindow.document.title = fields.cardName || 'Generated Card';
+                    })
+                    .catch((err) => {
+                        console.error('oops, something went wrong!', err);
+                    }).finally(() => {
+                    downloadingImage.value = false;
+                    updateSize();
+                    recalculateRatio();
+                    stageInstance.batchDraw();
+                });
+            }, 300);
         })
     }
 
