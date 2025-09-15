@@ -480,6 +480,7 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                     <v-image v-if="fields.cardRarity" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
                     <template v-if="selectedStyle === 'dented'">
                       <v-text
+                          v-if="fields.cardArtworkCredits !== ''"
                           :fontSize="footerTextFontSize"
                           :text="artworkCreditsText"
                           v-bind="getConfig('cardArtworkCredits')"
@@ -488,6 +489,12 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                           v-if="fields.cardArtworkCredits !== ''"
                           :fontSize="footerTextFontSize"
                           :text="dentedFooterText"
+                          v-bind="getConfig('cardFooterTextCentered')"
+                      />
+                      <v-text
+                          v-if="fields.cardArtworkCredits === ''"
+                          :fontSize="footerTextFontSize"
+                          :text="artworkCreditsText"
                           v-bind="getConfig('cardFooterText')"
                       />
                       <v-text
