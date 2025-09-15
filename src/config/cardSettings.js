@@ -92,18 +92,7 @@ const cardSettings = {
                 y: 76,
             },
             cardFooterText: {
-                x: 128,
-                y: 607.9,
-                width: 204,
-                height: 12,
-                fontFamily: 'dialog_cond_semiboldregular, Arial, sans-serif',
-                fontSize: 10.43,
-                verticalAlign: "top",
-                fill: "white",
-                align: "left",
-            },
-            cardArtworkCredits: {
-                x: 128,
+                x: 128.5,
                 y: 595.9,
                 width: 204,
                 height: 12,
@@ -112,6 +101,28 @@ const cardSettings = {
                 verticalAlign: "top",
                 fill: "white",
                 align: "left",
+            },
+            cardFooterTextCentered: {
+                x: 0,
+                y: 607.9,
+                width: 450,  // Full card width
+                height: 12,
+                fontFamily: 'dialog_cond_semiboldregular, Arial, sans-serif',
+                fontSize: 10.43,
+                verticalAlign: "top",
+                fill: "white",
+                align: "center",  // Centers within the full 450px width
+            },
+            cardArtworkCredits: {
+                x: 0,
+                y: 595.9,
+                width: 450,
+                height: 12,
+                fontFamily: 'dialog_cond_semiboldregular, Arial, sans-serif',
+                fontSize: 10.43,
+                verticalAlign: "top",
+                fill: "white",
+                align: "center",
             },
             copyrightOverlay: {
                 x: 305,  // Position where © appears in the dented footer
@@ -125,7 +136,7 @@ const cardSettings = {
                 align: "center",
             },
             copyrightOverlayBottom: {
-                x: 272,  // Position where © appears in the dented footer
+                x: 285,  // Position where © appears in the dented footer
                 y: 607.5,
                 width: 10,
                 height: 12,
@@ -220,6 +231,19 @@ const cardSettings = {
             },
         },
         weapon: {
+            cardName: {
+                x: 70.5,
+                y: 33,
+                width: 310,
+                height: 41,
+                fontFamily: 'amanda_std_regular',
+                fontSize: 29.1,
+                verticalAlign: "middle",
+                align: "center",
+                fill: "black",
+            },
+        },
+        weapon_equipment: {
             cardName: {
                 x: 70.5,
                 y: 33,
@@ -489,6 +513,19 @@ const cardSettings = {
             },
         },
         weapon: {
+            cardName: {
+                x: 70.5,
+                y: 31.9,
+                width: 310,
+                height: 41,
+                fontFamily: 'amanda_std_regular',
+                fontSize: 29.1,
+                verticalAlign: "middle",
+                align: "center",
+                fill: "black",
+            },
+        },
+        weapon_equipment: {
             cardName: {
                 x: 70.5,
                 y: 31.9,

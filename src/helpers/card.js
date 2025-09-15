@@ -127,6 +127,9 @@ export function useCard() {
             if (fields.cardType === 'weapon_equipment') {
                 type = 'weapon';
             }
+            if (fields.cardType === 'event') {
+                type = 'event';
+            }
             return el.type.toLowerCase() === type.toLowerCase();
         });
     });
@@ -410,7 +413,7 @@ export function useCard() {
         }
         if (selectedStyle.value === 'flat') {
             if (!fields.cardArtworkCredits) return '';
-            return 'FABKIT  | ' + fields.cardArtworkCredits.toUpperCase() + ' NOT TOURNAMENT LEGAL';
+            return 'FABKIT | ' + fields.cardArtworkCredits.toUpperCase() + ' | NOT TOURNAMENT LEGAL';
         }
 
         if (!fields.cardArtworkCredits) return 'FABKIT - ' + dentedFooterText.value;

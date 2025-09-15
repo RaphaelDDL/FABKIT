@@ -491,6 +491,33 @@ const types = [
                 id: "cardSubType",
             },
         ],
+    },
+    {
+        type: 'event',
+        label: 'Event',
+        fields: [
+            {
+                id: "cardName",
+            },
+            {
+                id: "cardText",
+            },
+            {
+                id: "cardPower",
+            },
+            {
+                id: "cardClass",
+            },
+            {
+                id: "cardSecondaryClass",
+            },
+            {
+                id: "cardRarity",
+            },
+            {
+                id: "cardSubType",
+            },
+        ],
     }
 ]
 
