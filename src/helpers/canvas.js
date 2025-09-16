@@ -4,6 +4,7 @@ const CanvasHelpers = class CanvasHelper {
     background = '';
     artworkLayer;
     backgroundLayer;
+    stageLayer;
 
     constructor() {
     }
