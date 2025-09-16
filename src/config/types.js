@@ -240,9 +240,6 @@ const types = [
             {
                 id: "cardRarity",
             },
-            {
-                id: "cardDefense",
-            },
         ],
     },
     {
@@ -275,6 +272,9 @@ const types = [
             },
             {
                 id: "cardRarity",
+            },
+            {
+                id: "cardDefense",
             },
         ],
     },
