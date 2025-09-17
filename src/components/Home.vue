@@ -50,6 +50,8 @@ const {
   downloadImage,
   downloadingImage,
   generateAndOpen,
+  sceneWidth,
+  sceneHeight,
 } = useCard();
 
 const {cardRarities} = useCardRarities();
@@ -415,8 +417,8 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                 <v-stage
                     ref="stage"
                     :config="{
-                      width: 450,
-                      height: 628,
+                      width: sceneWidth,
+                      height: sceneHeight,
                       scaleX: scale,
                       scaleY: scale
                     }"

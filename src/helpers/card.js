@@ -904,5 +904,7 @@ export function useCard() {
         loadingBackground,
         downloadingImage,
         generateAndOpen,
+        sceneWidth,
+        sceneHeight,
     };
 }
