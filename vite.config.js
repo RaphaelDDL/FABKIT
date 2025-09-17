@@ -19,6 +19,8 @@ export default defineConfig(async ({mode}) => {
             vue()
         ],
         server: {
+            // uncomment for local network testing
+            // host: '0.0.0.0',
             port: 8080,
         },
     }
