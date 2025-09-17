@@ -1,5 +1,4 @@
 <script setup>
-import { computed } from 'vue'
 import {PhotoIcon} from '@heroicons/vue/24/solid'
 import {ChevronDownIcon} from '@heroicons/vue/16/solid'
 import {useCard} from "../helpers/card.js";
@@ -47,8 +46,6 @@ const {
   containerElement,
   contentElement,
   stageContainerRef,
-  stageWidth,
-  stageHeight,
   scale,
   downloadImage,
   downloadingImage,

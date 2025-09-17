@@ -550,10 +550,6 @@ export function useCard() {
     const stageContainerRef = ref(null);
     const scale = ref(1);
 
-    // Computed properties for stage dimensions
-    const stageWidth = computed(() => sceneWidth * scale.value);
-    const stageHeight = computed(() => sceneHeight * scale.value);
-
     watch(currentBackground, (newBackground) => {
         nextTick().then(async () => {
             await doLoading(async () => {
@@ -599,8 +595,6 @@ export function useCard() {
             fields.cardSecondaryClass = ''
         }
     });
-
-
 
     // Function to handle resize
     const updateSize = () => {
@@ -658,7 +652,6 @@ export function useCard() {
         const handleResize = () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                const oldScale = scale.value;
                 updateSize();
                 const viewportWidth = window.innerWidth;
                 if (viewportWidth >= 640 && scale.value < 1) {
@@ -713,9 +706,9 @@ export function useCard() {
         link.remove();
     }
 
-    const downloadImage = function () {
-        downloadingImage.value = true;
+    const downloadingImage = ref(false);
 
+    const getCardParentClone = function () {
         // Clone the entire card parent structure
         const originalCardParent = document.querySelector('.cardParent');
         const clonedCardParent = originalCardParent.cloneNode(true);
@@ -725,8 +718,8 @@ export function useCard() {
         tempContainer.style.position = 'absolute';
         tempContainer.style.left = '-9999px';
         tempContainer.style.top = '-9999px';
-        tempContainer.style.width = '450px';
-        tempContainer.style.height = '628px';
+        tempContainer.style.width = `${sceneWidth}px`;
+        tempContainer.style.height = `${sceneHeight}px`;
         tempContainer.style.overflow = 'visible';
         tempContainer.appendChild(clonedCardParent);
         document.body.appendChild(tempContainer);
@@ -738,8 +731,8 @@ export function useCard() {
         const clonedTextContent = clonedCardParent.querySelector('#renderedContent');
 
         if (clonedStageContainer) {
-            clonedStageContainer.style.width = '450px';
-            clonedStageContainer.style.height = '628px';
+            clonedStageContainer.style.width = `${sceneWidth}px`;
+            clonedStageContainer.style.height = `${sceneHeight}px`;
             clonedStageContainer.style.transform = 'none';
         }
 
@@ -782,8 +775,8 @@ export function useCard() {
 
             const exportStage = new Konva.Stage({
                 container: konvaContainer,
-                width: 450,
-                height: 628,
+                width: sceneWidth,
+                height: sceneHeight,
             });
 
             // Clone all layers from original stage
@@ -795,13 +788,20 @@ export function useCard() {
 
             exportStage.batchDraw();
         }
+        return {clonedCardParent, tempContainer};
+    }
+
+    const downloadImage = function () {
+        downloadingImage.value = true;
+
+        const {clonedCardParent, tempContainer} = getCardParentClone();
 
         setTimeout(() => {
             toPng(clonedCardParent, {
-                width: 450,
-                canvasWidth: 450,
-                height: 628,
-                canvasHeight: 628,
+                width: sceneWidth,
+                canvasWidth: sceneWidth,
+                height: sceneHeight,
+                canvasHeight: sceneHeight,
                 backgroundColor: 'transparent',
                 pixelRatio: 1,
             })
@@ -819,97 +819,23 @@ export function useCard() {
         }, 300);
     };
 
-    const downloadingImage = ref(false);
-
     const generateAndOpen = function () {
         downloadingImage.value = true;
-
-        // Use the same cloning approach
-        const originalCardParent = document.querySelector('.cardParent');
-        const clonedCardParent = originalCardParent.cloneNode(true);
-
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.top = '-9999px';
-        tempContainer.style.width = '450px';
-        tempContainer.style.height = '628px';
-        tempContainer.style.overflow = 'visible';
-        tempContainer.appendChild(clonedCardParent);
-        document.body.appendChild(tempContainer);
-
-        const clonedStageContainer = clonedCardParent.querySelector('[ref="stageContainerRef"]') ||
-            clonedCardParent.querySelector('.overflow-hidden');
-        const clonedTextOverlay = clonedCardParent.querySelector('#renderedCardText');
-        const clonedTextContent = clonedCardParent.querySelector('#renderedContent');
-
-        if (clonedStageContainer) {
-            clonedStageContainer.style.width = '450px';
-            clonedStageContainer.style.height = '628px';
-            clonedStageContainer.style.transform = 'none';
-        }
-
-        if (clonedTextOverlay) {
-            const textY = frameType.value === 'flat' ? 397.3 : 408;
-            clonedTextOverlay.style.position = 'absolute';
-            clonedTextOverlay.style.left = '50%';
-            clonedTextOverlay.style.top = `${textY}px`;
-            clonedTextOverlay.style.transform = 'translateX(-50%)';
-            clonedTextOverlay.style.width = '345px';
-            clonedTextOverlay.style.height = '135px';
-            clonedTextOverlay.style.zIndex = '10';
-            clonedTextOverlay.style.pointerEvents = 'none';
-        }
-
-        if (clonedTextContent) {
-            // Force the text content to full scale
-            const baseConfig = frameTypeTextConfig.value;
-            clonedTextContent.style.fontSize = `${baseConfig.maxFontSize}px`;
-            clonedTextContent.style.lineHeight = `${(baseConfig.maxFontSize / baseConfig.baseFontSize) * baseConfig.baseLineHeight}px`;
-
-            const paragraphs = clonedTextContent.querySelectorAll('p');
-            paragraphs.forEach((p, index) => {
-                p.style.margin = '0';
-                p.style.padding = '0';
-                if (index > 0) {
-                    const lineHeight = (baseConfig.maxFontSize / baseConfig.baseFontSize) * baseConfig.baseLineHeight;
-                    p.style.marginTop = `${lineHeight * baseConfig.paragraphSpacing}px`;
-                }
-            });
-        }
-
-        const konvaContainer = clonedStageContainer.querySelector('canvas')?.parentElement;
-        if (konvaContainer) {
-            konvaContainer.innerHTML = '';
-
-            const exportStage = new Konva.Stage({
-                container: konvaContainer,
-                width: 450,
-                height: 628,
-            });
-
-            const originalStage = stage.value.getStage();
-            originalStage.children.forEach(layer => {
-                const clonedLayer = layer.clone();
-                exportStage.add(clonedLayer);
-            });
-
-            exportStage.batchDraw();
-        }
+        const {clonedCardParent, tempContainer} = getCardParentClone();
 
         setTimeout(() => {
             toPng(clonedCardParent, {
-                width: 450,
-                canvasWidth: 450,
-                height: 628,
-                canvasHeight: 628,
+                width: sceneWidth,
+                canvasWidth: sceneWidth,
+                height: sceneHeight,
+                canvasHeight: sceneHeight,
                 backgroundColor: 'transparent',
                 pixelRatio: 1,
             })
                 .then((dataUrl) => {
                     const newWindow = window.open();
                     newWindow.document.write(`
-                <html>
+                <html lang="en">
                     <head>
                         <title>${fields.cardName || 'Generated Card'}</title>
                         <style>
@@ -973,8 +899,6 @@ export function useCard() {
         containerElement,
         contentElement,
         stageContainerRef,
-        stageWidth,
-        stageHeight,
         scale,
         downloadImage,
         loadingBackground,
