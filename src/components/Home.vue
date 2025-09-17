@@ -1,5 +1,5 @@
 <script setup>
-
+import { computed } from 'vue'
 import {PhotoIcon} from '@heroicons/vue/24/solid'
 import {ChevronDownIcon} from '@heroicons/vue/16/solid'
 import {useCard} from "../helpers/card.js";
@@ -413,18 +413,16 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                 </svg>
                 <span class="sr-only">Loading...</span>
               </div>
-              <div id="renderedCardText" ref="containerElement" :style="cardTextStyle">
-                <div v-if="fields" id="renderedContent" ref="contentElement" v-html="fields.cardText"></div>
-              </div>
-              <div ref="stageContainerRef" style="width: 100%;height:100%;">
+              <div class="relative">
+              <div ref="stageContainerRef" class="overflow-hidden mx-auto" :style="{width: `${450 * scale}px`, height: `${628 * scale}px`}">
                 <v-stage
                     ref="stage"
                     :config="{
-                    width: stageWidth,
-                    height: stageHeight,
-                    scaleX: scale,
-                    scaleY: scale
-                  }"
+                      width: 450,
+                      height: 628,
+                      scaleX: scale,
+                      scaleY: scale
+                    }"
                 >
                   <v-layer id="artwork" ref="artwork"></v-layer>
                   <v-layer id="background" ref="background"></v-layer>
@@ -536,7 +534,11 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                     </template>
                   </v-layer>
                 </v-stage>
+                <div id="renderedCardText" ref="containerElement" :style="cardTextStyle">
+                  <div v-if="fields" id="renderedContent" ref="contentElement" v-html="fields.cardText"></div>
+                </div>
               </div>
+            </div>
             </div>
           </div>
           <div class="flex flex-col gap-3 justify-center mt-2 print:hidden sm:flex-row sm:gap-2">

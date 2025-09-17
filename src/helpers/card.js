@@ -179,13 +179,22 @@ export function useCard() {
     });
 
     const cardTextStyle = computed(() => {
-        let base = `transform: translateX(calc(-50% * ${scale.value}));height: calc(135px * ${scale.value});width: calc(345px * ${scale.value}););`
-        // Return the frame type CSS style
-        if (frameType.value === 'flat') {
-            return base + `top: calc(397.3px * ${scale.value});left: calc(50.165% * ${scale.value});`;
+        if (!stageContainerRef.value) {
+            return 'display: none;';
         }
 
-        return base + `top:calc(408px * ${scale.value});left: calc(50% * ${scale.value});`
+        const textY = frameType.value === 'flat' ? 397.3 : 408;
+
+        return `
+        position: absolute;
+        transform: translateX(-50%);
+        height: ${135 * scale.value}px;
+        width: ${345 * scale.value}px;
+        left: 50%;
+        top: ${textY * scale.value}px;
+        z-index: 10;
+        pointer-events: none;
+    `;
     });
 
     const cardBackSettings = useCardBackSettings();
@@ -534,6 +543,17 @@ export function useCard() {
 
     const canvasHelper = new CanvasHelper();
 
+    const sceneWidth = 450;
+    const sceneHeight = 628;
+
+    // Reactive references
+    const stageContainerRef = ref(null);
+    const scale = ref(1);
+
+    // Computed properties for stage dimensions
+    const stageWidth = computed(() => sceneWidth * scale.value);
+    const stageHeight = computed(() => sceneHeight * scale.value);
+
     watch(currentBackground, (newBackground) => {
         nextTick().then(async () => {
             await doLoading(async () => {
@@ -568,62 +588,99 @@ export function useCard() {
         canvasHelper.drawUploadedArtwork(newUploadedArtwork, getConfig('cardUploadedArtwork'));
     }, {deep: true});
 
+    watch(scale, () => {
+        nextTick().then(() => {
+            recalculateRatio();
+        });
+    });
+
     watch(() => fields.cardClass, (newValue) => {
         if (!newValue) {
             fields.cardSecondaryClass = ''
         }
-    })
+    });
 
-    // Define virtual size for our scene
-    const sceneWidth = 450;
-    const sceneHeight = 628;
 
-    // Reactive references
-    const stageContainerRef = ref(null);
-    const scale = ref(1);
-
-    // Computed properties for stage dimensions
-    const stageWidth = computed(() => sceneWidth * scale.value);
-    const stageHeight = computed(() => sceneHeight * scale.value);
 
     // Function to handle resize
     const updateSize = () => {
         if (!stageContainerRef.value) return;
 
-        // Get container width
-        let containerWidth = stageContainerRef.value.offsetWidth;
+        // Get the viewport width directly instead of walking up the DOM
+        const viewportWidth = window.innerWidth;
 
-        if (0 === containerWidth) {
-            containerWidth = sceneWidth;
+        // Use a more reliable container width calculation
+        let availableWidth;
+
+        if (viewportWidth >= 640) { // sm breakpoint in Tailwind
+            // Desktop: find the actual grid column container
+            let containerElement = stageContainerRef.value.parentElement;
+            while (containerElement && !containerElement.classList.contains('grid')) {
+                containerElement = containerElement.parentElement;
+                if (!containerElement || containerElement === document.body) break;
+            }
+
+            if (containerElement) {
+                // This should be the right column of the grid
+                availableWidth = containerElement.clientWidth * 0.33 - 32; // Roughly 1/3 for the right column minus padding
+            } else {
+                availableWidth = viewportWidth * 0.33 - 32;
+            }
+        } else {
+            // Mobile: use most of the viewport width
+            availableWidth = viewportWidth - 32;
         }
 
+        availableWidth = Math.max(availableWidth, 200);
+
         // Calculate scale
-        scale.value = containerWidth / sceneWidth;
+        const newScale = availableWidth >= sceneWidth ? 1 : availableWidth / sceneWidth;
+
+        // Force update even if the difference is small, since this might be a viewport change
+        if (Math.abs(scale.value - newScale) > 0.001) {
+            scale.value = newScale;
+        }
     };
 
     onMounted(() => {
         fields.cardRarity = 1;
         canvasHelper.artworkLayer = artwork.value.getStage();
         canvasHelper.backgroundLayer = background.value.getStage();
-        updateSize();
-        recalculateRatio();
-        // Add event listener
-        window.addEventListener('resize', () => {
-            nextTick().then(() => {
-                updateSize();
-                recalculateRatio();
-            });
+
+        // Initial size calculation
+        nextTick().then(() => {
+            updateSize();
+            recalculateRatio();
         });
+
+        // Debounced resize handler to prevent excessive calls
+        let resizeTimeout;
+        const handleResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const oldScale = scale.value;
+                updateSize();
+                const viewportWidth = window.innerWidth;
+                if (viewportWidth >= 640 && scale.value < 1) {
+                    scale.value = 1;
+                }
+
+                nextTick().then(() => {
+                    recalculateRatio();
+                });
+            }, 100);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Store the handler reference for cleanup
+        stageContainerRef.value._resizeHandler = handleResize;
     });
 
     onUnmounted(() => {
-        // Clean up
-        window.removeEventListener('resize', () => {
-            nextTick().then(() => {
-                updateSize();
-                recalculateRatio();
-            });
-        });
+        if (stageContainerRef.value?._resizeHandler) {
+            window.removeEventListener('resize', stageContainerRef.value._resizeHandler);
+        }
 
         fields.cardType = '';
         fields.cardPitch = '';
@@ -635,7 +692,7 @@ export function useCard() {
         fields.cardTalent = '';
         fields.cardClass = '';
         fields.cardSecondaryClass = '';
-        fields.subType = '';
+        fields.cardSubType = '';
         fields.cardMacroGroup = '';
         fields.cardWeapon = '';
         fields.cardRarity = 0;
@@ -658,72 +715,236 @@ export function useCard() {
 
     const downloadImage = function () {
         downloadingImage.value = true;
-        const stageInstance = stage.value.getStage();
-        stageInstance.setWidth(450);
-        stageInstance.setHeight(628);
-        stageInstance.setScale(1, 1);
-        scale.value = 1;
-        stageInstance.batchDraw();
-        recalculateRatio();
-        nextTick(() => {
-            setTimeout(() => {
-                toPng(document.querySelector('.cardParent'), {
-                    width: 450,
-                    canvasWidth: 450,
-                    height: 628,
-                    canvasHeight: 628,
+
+        // Clone the entire card parent structure
+        const originalCardParent = document.querySelector('.cardParent');
+        const clonedCardParent = originalCardParent.cloneNode(true);
+
+        // Create invisible container
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '-9999px';
+        tempContainer.style.width = '450px';
+        tempContainer.style.height = '628px';
+        tempContainer.style.overflow = 'visible';
+        tempContainer.appendChild(clonedCardParent);
+        document.body.appendChild(tempContainer);
+
+        // Force the cloned card to export dimensions
+        const clonedStageContainer = clonedCardParent.querySelector('[ref="stageContainerRef"]') ||
+            clonedCardParent.querySelector('.overflow-hidden');
+        const clonedTextOverlay = clonedCardParent.querySelector('#renderedCardText');
+        const clonedTextContent = clonedCardParent.querySelector('#renderedContent');
+
+        if (clonedStageContainer) {
+            clonedStageContainer.style.width = '450px';
+            clonedStageContainer.style.height = '628px';
+            clonedStageContainer.style.transform = 'none';
+        }
+
+        if (clonedTextOverlay) {
+            // Apply export-scale text positioning (scale = 1)
+            const textY = frameType.value === 'flat' ? 397.3 : 408;
+            clonedTextOverlay.style.position = 'absolute';
+            clonedTextOverlay.style.left = '50%';
+            clonedTextOverlay.style.top = `${textY}px`;
+            clonedTextOverlay.style.transform = 'translateX(-50%)';
+            clonedTextOverlay.style.width = '345px';
+            clonedTextOverlay.style.height = '135px';
+            clonedTextOverlay.style.zIndex = '10';
+            clonedTextOverlay.style.pointerEvents = 'none';
+        }
+
+        if (clonedTextContent) {
+            // Force the text content to full scale (scale = 1) regardless of current mobile scale
+            const baseConfig = frameTypeTextConfig.value;
+            clonedTextContent.style.fontSize = `${baseConfig.maxFontSize}px`;
+            clonedTextContent.style.lineHeight = `${(baseConfig.maxFontSize / baseConfig.baseFontSize) * baseConfig.baseLineHeight}px`;
+
+            // Apply paragraph spacing at full scale
+            const paragraphs = clonedTextContent.querySelectorAll('p');
+            paragraphs.forEach((p, index) => {
+                p.style.margin = '0';
+                p.style.padding = '0';
+                if (index > 0) {
+                    const lineHeight = (baseConfig.maxFontSize / baseConfig.baseFontSize) * baseConfig.baseLineHeight;
+                    p.style.marginTop = `${lineHeight * baseConfig.paragraphSpacing}px`;
+                }
+            });
+        }
+
+        // Create new Konva stage in the cloned container
+        const konvaContainer = clonedStageContainer.querySelector('canvas')?.parentElement;
+        if (konvaContainer) {
+            // Clear existing canvas
+            konvaContainer.innerHTML = '';
+
+            const exportStage = new Konva.Stage({
+                container: konvaContainer,
+                width: 450,
+                height: 628,
+            });
+
+            // Clone all layers from original stage
+            const originalStage = stage.value.getStage();
+            originalStage.children.forEach(layer => {
+                const clonedLayer = layer.clone();
+                exportStage.add(clonedLayer);
+            });
+
+            exportStage.batchDraw();
+        }
+
+        setTimeout(() => {
+            toPng(clonedCardParent, {
+                width: 450,
+                canvasWidth: 450,
+                height: 628,
+                canvasHeight: 628,
+                backgroundColor: 'transparent',
+                pixelRatio: 1,
+            })
+                .then((dataUrl) => {
+                    downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
                 })
-                    .then((dataUrl) => {
-                        downloadURI(dataUrl, (fields.cardName || 'card') + '.png');
-                    })
-                    .catch((err) => {
-                        console.error('oops, something went wrong!', err);
-                    }).finally(() => {
+                .catch((err) => {
+                    console.error('Export failed:', err);
+                })
+                .finally(() => {
+                    // Cleanup
+                    document.body.removeChild(tempContainer);
                     downloadingImage.value = false;
-                    updateSize();
-                    recalculateRatio();
-                    stageInstance.batchDraw();
                 });
-            }, 300);
-        })
-    }
+        }, 300);
+    };
 
     const downloadingImage = ref(false);
 
     const generateAndOpen = function () {
         downloadingImage.value = true;
-        const stageInstance = stage.value.getStage();
-        stageInstance.setWidth(450);
-        stageInstance.setHeight(628);
-        stageInstance.setScale(1, 1);
-        scale.value = 1;
-        stageInstance.batchDraw();
-        recalculateRatio();
-        nextTick(() => {
-            setTimeout(() => {
-                toPng(document.querySelector('.cardParent'), {
-                    width: 450,
-                    canvasWidth: 450,
-                    height: 628,
-                    canvasHeight: 628,
+
+        // Use the same cloning approach
+        const originalCardParent = document.querySelector('.cardParent');
+        const clonedCardParent = originalCardParent.cloneNode(true);
+
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '-9999px';
+        tempContainer.style.width = '450px';
+        tempContainer.style.height = '628px';
+        tempContainer.style.overflow = 'visible';
+        tempContainer.appendChild(clonedCardParent);
+        document.body.appendChild(tempContainer);
+
+        const clonedStageContainer = clonedCardParent.querySelector('[ref="stageContainerRef"]') ||
+            clonedCardParent.querySelector('.overflow-hidden');
+        const clonedTextOverlay = clonedCardParent.querySelector('#renderedCardText');
+        const clonedTextContent = clonedCardParent.querySelector('#renderedContent');
+
+        if (clonedStageContainer) {
+            clonedStageContainer.style.width = '450px';
+            clonedStageContainer.style.height = '628px';
+            clonedStageContainer.style.transform = 'none';
+        }
+
+        if (clonedTextOverlay) {
+            const textY = frameType.value === 'flat' ? 397.3 : 408;
+            clonedTextOverlay.style.position = 'absolute';
+            clonedTextOverlay.style.left = '50%';
+            clonedTextOverlay.style.top = `${textY}px`;
+            clonedTextOverlay.style.transform = 'translateX(-50%)';
+            clonedTextOverlay.style.width = '345px';
+            clonedTextOverlay.style.height = '135px';
+            clonedTextOverlay.style.zIndex = '10';
+            clonedTextOverlay.style.pointerEvents = 'none';
+        }
+
+        if (clonedTextContent) {
+            // Force the text content to full scale
+            const baseConfig = frameTypeTextConfig.value;
+            clonedTextContent.style.fontSize = `${baseConfig.maxFontSize}px`;
+            clonedTextContent.style.lineHeight = `${(baseConfig.maxFontSize / baseConfig.baseFontSize) * baseConfig.baseLineHeight}px`;
+
+            const paragraphs = clonedTextContent.querySelectorAll('p');
+            paragraphs.forEach((p, index) => {
+                p.style.margin = '0';
+                p.style.padding = '0';
+                if (index > 0) {
+                    const lineHeight = (baseConfig.maxFontSize / baseConfig.baseFontSize) * baseConfig.baseLineHeight;
+                    p.style.marginTop = `${lineHeight * baseConfig.paragraphSpacing}px`;
+                }
+            });
+        }
+
+        const konvaContainer = clonedStageContainer.querySelector('canvas')?.parentElement;
+        if (konvaContainer) {
+            konvaContainer.innerHTML = '';
+
+            const exportStage = new Konva.Stage({
+                container: konvaContainer,
+                width: 450,
+                height: 628,
+            });
+
+            const originalStage = stage.value.getStage();
+            originalStage.children.forEach(layer => {
+                const clonedLayer = layer.clone();
+                exportStage.add(clonedLayer);
+            });
+
+            exportStage.batchDraw();
+        }
+
+        setTimeout(() => {
+            toPng(clonedCardParent, {
+                width: 450,
+                canvasWidth: 450,
+                height: 628,
+                canvasHeight: 628,
+                backgroundColor: 'transparent',
+                pixelRatio: 1,
+            })
+                .then((dataUrl) => {
+                    const newWindow = window.open();
+                    newWindow.document.write(`
+                <html>
+                    <head>
+                        <title>${fields.cardName || 'Generated Card'}</title>
+                        <style>
+                            body { 
+                                margin: 0; 
+                                padding: 20px; 
+                                background: #f0f0f0; 
+                                display: flex; 
+                                justify-content: center; 
+                                align-items: center; 
+                                min-height: 100vh; 
+                            }
+                            img { 
+                                max-width: 100%; 
+                                height: auto; 
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+                                border-radius: 8px; 
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${dataUrl}" alt="Generated Card" />
+                    </body>
+                </html>
+            `);
                 })
-                    .then((dataUrl) => {
-                        // Open in new tab instead of downloading
-                        const newWindow = window.open();
-                        newWindow.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;" alt="Generated Card">`);
-                        newWindow.document.title = fields.cardName || 'Generated Card';
-                    })
-                    .catch((err) => {
-                        console.error('oops, something went wrong!', err);
-                    }).finally(() => {
+                .catch((err) => {
+                    console.error('Export failed:', err);
+                })
+                .finally(() => {
+                    document.body.removeChild(tempContainer);
                     downloadingImage.value = false;
-                    updateSize();
-                    recalculateRatio();
-                    stageInstance.batchDraw();
                 });
-            }, 300);
-        })
-    }
+        }, 300);
+    };
 
     return {
         types,
