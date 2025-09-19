@@ -35,6 +35,7 @@ export function useCard() {
         cardUploadedArtwork: '',
         cardFooterText: '',
         cardArtworkCredits: '',
+        cardBorderRound: false,
     });
     const cardTypeText = computed(() => {
         const classText = fields.cardClass;
@@ -574,6 +575,11 @@ export function useCard() {
         }
     })
 
+    watch(() => fields.cardBorderRound, (newValue) => {
+        canvasHelper.enableClipping = newValue;
+        canvasHelper.updateClipping();
+    })
+
     // Define virtual size for our scene
     const sceneWidth = 450;
     const sceneHeight = 628;
@@ -603,8 +609,9 @@ export function useCard() {
 
     onMounted(() => {
         fields.cardRarity = 1;
-        canvasHelper.artworkLayer = artwork.value.getStage();
-        canvasHelper.backgroundLayer = background.value.getStage();
+        canvasHelper.artworkLayer = artwork.value;
+        canvasHelper.backgroundLayer = background.value;
+        canvasHelper.stageLayer = stage.value.getStage();
         updateSize();
         recalculateRatio();
         // Add event listener
@@ -643,6 +650,7 @@ export function useCard() {
         fields.cardLife = '';
         fields.cardUploadedArtwork = '';
         fields.cardFooterText = '';
+        fields.cardBorderRound = true;
     });
 
     const downloadURI = function (uri, name) {

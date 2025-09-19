@@ -4,6 +4,9 @@ const CanvasHelpers = class CanvasHelper {
     background = '';
     artworkLayer;
     backgroundLayer;
+    stageLayer;
+    canvasGroup;
+    enableClipping;
 
     constructor() {
     }
@@ -78,16 +81,16 @@ const CanvasHelpers = class CanvasHelper {
     drawUploadedArtwork(src, config) {
         const self = this;
 
-        const existing = self.artworkLayer.findOne('.artwork');
-        if (existing && existing.attrs.image.src === src) {
-            if (config.height && existing.attrs.height === config.height) {
-                return;
-            }
-            existing.setAttrs(config);
-            // apply default left-top crop
-            applyCrop('center-middle');
-            return;
-        }
+        // const existing = self.artworkLayer.findOne('.artwork');
+        // if (existing && existing.attrs.image.src === src) {
+        //     if (config.height && existing.attrs.height === config.height) {
+        //         return;
+        //     }
+        //     existing.setAttrs(config);
+        //     // apply default left-top crop
+        //     applyCrop('center-middle');
+        //     return;
+        // }
 
         self.artworkLayer.removeChildren();
 
@@ -115,7 +118,14 @@ const CanvasHelpers = class CanvasHelper {
                             draggable: false,
                         }
                     });
-                self.artworkLayer.add(img);
+                const group = self.clippingGroup({
+                    w: self.artworkLayer.width(),
+                    h: self.artworkLayer.height(),
+                    t: 'art',
+                })
+                // Add image to group, then group to layer
+                group.add(img);
+                self.artworkLayer.add(group);
                 // apply default left-top crop
                 applyCrop('center-middle');
             }
@@ -125,10 +135,10 @@ const CanvasHelpers = class CanvasHelper {
     async drawBackground(src) {
         const self = this;
 
-        const existing = self.backgroundLayer.findOne('.background');
-        if (existing && existing.attrs.image.src.endsWith(src)) {
-            return Promise.resolve();
-        }
+        // const existing = self.backgroundLayer.findOne('.background');
+        // if (existing && existing.attrs.image.src.endsWith(src)) {
+        //     return Promise.resolve();
+        // }
 
         return new Promise(resolve => {
             Konva.Image.fromURL(
@@ -137,23 +147,74 @@ const CanvasHelpers = class CanvasHelper {
                     img.setAttrs({
                         x: 0,
                         y: 0,
-                        name: 'background',
+                        name: 'background-image',
                         id: 'img-background',
                         draggable: false,
                     });
-                    if (existing) {
+                    // if (existing) {
                         // disable clear before draw
                         self.backgroundLayer.clearBeforeDraw(false);
                         self.backgroundLayer.removeChildren();
-                    }
+                    // }
                     // Enable clear before draw
                     self.backgroundLayer.clearBeforeDraw(true);
                     self.backgroundLayer.add(img);
 
+
+                    const group = self.clippingGroup({
+                        w: self.backgroundLayer.width(),
+                        h: self.backgroundLayer.height(),
+                        t: 'bg',
+                    })
+                    // Add image to group, then group to layer
+                    group.add(img);
+                    self.backgroundLayer.add(group);
+                    self.backgroundLayer.listening(false);
+                    self.backgroundLayer.batchDraw();
                     resolve();
                 }
             );
         });
+    }
+
+    clippingGroup ({w = 0, h = 0, t = 'bg'}) { // type: bg || art
+        // Create a group to hold the image
+        const group = new Konva.Group({
+            name: `${t}group`,
+            id: `${t}-group`,
+            x: 0,
+            y: 0,
+            draggable: t === 'art',
+            listening: t === 'art',
+        });
+        return group;
+    }
+
+    updateClipping() {
+        const RADIUS = 30;
+
+        const createClipFunc = (w, h) => (ctx) => {
+            ctx.arc(150, 120, 7000, 0, Math.PI * 2, false);
+            const path = new Path2D();
+            if (path.roundRect) {
+                path.roundRect(0, 0, w, h, RADIUS);
+            } else {
+                // Fallback for browsers that don't support roundRect
+                path.rect(0, 0, w, h);
+            }
+            ctx._context.clip(path);
+        };
+
+        // Apply clipping to layers instead of group
+        if (this.artworkLayer) {
+            this.artworkLayer.clipFunc(this.enableClipping ? createClipFunc(this.stageLayer.width(), this.stageLayer.height()) : null);
+        }
+        if (this.backgroundLayer) {
+            this.backgroundLayer.clipFunc(this.enableClipping ? createClipFunc(this.stageLayer.width(), this.stageLayer.height()) : null);
+        }
+        if (this.stageLayer) {
+            this.stageLayer.batchDraw();
+        }
     }
 
 }
