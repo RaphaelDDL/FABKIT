@@ -1,6 +1,5 @@
 import {defineConfig, loadEnv} from 'vite'
 import vue from '@vitejs/plugin-vue'
-import tailwindcss from '@tailwindcss/vite'
 import getCardbacks from "./vite_generate_backgrounds.js";
 import fs from 'fs';
 
@@ -15,11 +14,25 @@ export default defineConfig(async ({mode}) => {
     return {
         base: '/',
         plugins: [
-            tailwindcss(),
             vue()
         ],
         server: {
+            // uncomment for local network testing
+            // host: '0.0.0.0',
             port: 8080,
         },
+        build: {
+          cssCodeSplit: true,
+          rollupOptions: {
+            output: {
+              manualChunks: {
+                lottie: ['lottie-web'],
+                tiptap: ['@tiptap/core', 'prosemirror-transform', 'prosemirror-model', 'prosemirror-view'],
+                emoji: ['@tiptap/extension-emoji'],
+                konva: ['konva'],
+              }
+            }
+          }
+        }
     }
 })

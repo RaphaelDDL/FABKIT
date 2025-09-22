@@ -1,0 +1,67 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "npm"
+    # Group all patch updates together
+    groups:
+      production-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+          - "stylelint*"
+          - "vite"
+          - "vite-plugin-*"
+          - "@vitejs/*"
+          - "@tiptap/*"
+        update-types:
+          - "patch"
+          - "minor"
+      development-dependencies:
+        patterns:
+          - "@types/*"
+          - "stylelint*"
+        update-types:
+          - "patch"
+          - "minor"
+      vite-ecosystem:
+        patterns:
+          - "vite"
+          - "vite-plugin-*"
+          - "@vitejs/*"
+        update-types:
+          - "patch"
+          - "minor"
+      tiptap-ecosystem:
+        patterns:
+          - "@tiptap/*"
+        update-types:
+          - "patch"
+          - "minor"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "github-actions"
+      - "ci"

@@ -1,5 +1,4 @@
 <script setup>
-
 import {PhotoIcon} from '@heroicons/vue/24/solid'
 import {ChevronDownIcon} from '@heroicons/vue/16/solid'
 import {useCard} from "../helpers/card.js";
@@ -47,12 +46,14 @@ const {
   containerElement,
   contentElement,
   stageContainerRef,
-  stageWidth,
-  stageHeight,
   scale,
   downloadImage,
   downloadingImage,
   generateAndOpen,
+  sceneWidth,
+  sceneHeight,
+  nonDentedTypes,
+  gridRightColumn,
 } = useCard();
 
 const {cardRarities} = useCardRarities();
@@ -367,6 +368,7 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                     name="cardStyle"
                     type="checkbox"
                     @change="handleStyleToggle"
+                    :disabled="nonDentedTypes.includes(fields.cardType)"
                 />
                 <div class="knobs"></div>
                 <div class="layer"></div>
@@ -404,7 +406,7 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
             </button>
           </div>
 
-          <div class="flex flex-col w-full xs:items-center">
+          <div ref="gridRightColumn" class="flex flex-col w-full xs:items-center">
             <div class="cardParent">
               <div role="status" v-show="loadingBackground" class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                   <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-primary" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -413,131 +415,133 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                 </svg>
                 <span class="sr-only">Loading...</span>
               </div>
-              <div id="renderedCardText" ref="containerElement" :style="cardTextStyle">
-                <div v-if="fields" id="renderedContent" ref="contentElement" v-html="fields.cardText"></div>
-              </div>
-              <div ref="stageContainerRef" style="width: 100%;height:100%;">
-                <v-stage
-                    ref="stage"
-                    :config="{
-                    width: stageWidth,
-                    height: stageHeight,
-                    scaleX: scale,
-                    scaleY: scale
-                  }"
-                >
-                  <v-layer id="artwork" ref="artwork"></v-layer>
-                  <v-layer id="background" ref="background"></v-layer>
-                  <v-layer>
-                    <v-image
-                        v-if="fields.cardType === 'block'"
+              <div class="relative">
+                <div ref="stageContainerRef" class="overflow-hidden mx-auto w-full">
+                    <v-stage
+                        ref="stage"
                         :config="{
-                       ...getConfig('noResourceImage'),
-                       image: noResourceImage,
-                     }"
-                    />
-                    <v-image
-                        v-if="fields.cardPower !== ''"
-                        :config="{
-                       ...getConfig('powerImage'),
-                       image: powerImage,
-                     }"
-                    />
-                    <v-image
-                        v-if="fields.cardDefense !== ''"
-                        :config="{
-                       ...getConfig('defenseImage'),
-                       image: defenseImage,
-                     }"
-                    />
-                    <v-image
-                        v-if="fields.cardLife !== ''"
-                        :config="{
-                       ...getConfig('lifeImage'),
-                       image: lifeImage,
-                     }"
-                    />
-                  </v-layer>
-                  <v-layer id="text">
-                    <v-text v-show="fields.cardName" v-bind="{
-                  ...getConfig('cardName'),
-                  ...{
-                    text: fields.cardName,
-                    fontSize: nameFontSize
-                  }
-                }"></v-text>
-                    <v-text v-if="fields.cardResource !== ''" :text="fields.cardResource" v-bind="getConfig('cardResource')"></v-text>
-                    <v-text v-if="fields.cardDefense !== ''" :text="fields.cardDefense" v-bind="getConfig('cardDefense')"></v-text>
-                    <v-text v-if="fields.cardPower !== ''" :text="fields.cardPower" v-bind="getConfig('cardPower')"></v-text>
-                    <v-text v-if="fields.cardLife !== ''" :text="fields.cardLife" v-bind="getConfig('cardLife')"></v-text>
-                    <v-text v-if="fields.cardHeroIntellect !== ''" :text="fields.cardHeroIntellect" v-bind="getConfig('cardHeroIntellect')"></v-text>
-                    <v-text
-                        :text="cardTypeText"
-                        v-bind="{...getConfig('cardTypeText'), fontSize: typeTextFontSize}"
-                    ></v-text>
-                  </v-layer>
-                  <v-layer id="footer">
-                    <v-image v-if="fields.cardRarity" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
-                    <template v-if="selectedStyle === 'dented'">
-                      <v-text
-                          v-if="fields.cardArtworkCredits !== ''"
-                          :fontSize="footerTextFontSize"
-                          :text="artworkCreditsText"
-                          v-bind="getConfig('cardArtworkCredits')"
-                      />
-                      <v-text
-                          v-if="fields.cardArtworkCredits !== ''"
-                          :fontSize="footerTextFontSize"
-                          :text="dentedFooterText"
-                          v-bind="getConfig('cardFooterTextCentered')"
-                      />
-                      <v-text
-                          v-if="fields.cardArtworkCredits === ''"
-                          :fontSize="footerTextFontSize"
-                          :text="artworkCreditsText"
-                          v-bind="getConfig('cardFooterText')"
-                      />
-                      <v-text
-                          v-if="fields.cardArtworkCredits !== ''"
-                          text="©"
-                          v-bind="{...getConfig('copyrightOverlayBottom')}"
-                      />
-                      <v-text
-                          v-else
-                          text="©"
-                          v-bind="{...getConfig('copyrightOverlay')}"
-                      />
-                    </template>
-                    <template v-if="selectedStyle === 'flat'">
-                      <template v-if="fields.cardArtworkCredits !== ''">
-                        <v-text
-                            :fontSize="footerTextFontSize"
-                            :text="artworkCreditsText"
-                            v-bind="getConfig('cardFooterText')"
+                          width: sceneWidth * scale,
+                          height: sceneHeight * scale,
+                          scaleX: scale,
+                          scaleY: scale
+                        }"
+                    >
+                      <v-layer id="artwork" ref="artwork"></v-layer>
+                      <v-layer id="background" ref="background"></v-layer>
+                      <v-layer>
+                        <v-image
+                            v-if="fields.cardType === 'block'"
+                            :config="{
+                           ...getConfig('noResourceImage'),
+                           image: noResourceImage,
+                         }"
                         />
-                      </template>
-                      <template v-else>
-                        <v-text
-                            :fontSize="footerTextFontSize"
-                            text="FABKIT  |  NOT TOURNAMENT LEGAL"
-                            v-bind="getConfig('cardFooterText')"
+                        <v-image
+                            v-if="fields.cardPower !== ''"
+                            :config="{
+                           ...getConfig('powerImage'),
+                           image: powerImage,
+                         }"
                         />
-                      </template>
-                      <v-text
-                          :fontSize="footerTextFontSize"
-                          :text="flatFooterText"
-                          v-bind="getConfig('cardFooterTextRight')"
-                      />
-                      <!-- Copyright overlay -->
-                      <v-text
-                          text="©"
-                          v-bind="getConfig('copyrightOverlay')"
-                      />
-                    </template>
-                  </v-layer>
-                </v-stage>
+                        <v-image
+                            v-if="fields.cardDefense !== ''"
+                            :config="{
+                           ...getConfig('defenseImage'),
+                           image: defenseImage,
+                         }"
+                        />
+                        <v-image
+                            v-if="fields.cardLife !== ''"
+                            :config="{
+                           ...getConfig('lifeImage'),
+                           image: lifeImage,
+                         }"
+                        />
+                      </v-layer>
+                      <v-layer id="text">
+                        <v-text v-show="fields.cardName" v-bind="{
+                      ...getConfig('cardName'),
+                      ...{
+                        text: fields.cardName,
+                        fontSize: nameFontSize
+                      }
+                    }"></v-text>
+                        <v-text v-if="fields.cardResource !== ''" :text="fields.cardResource" v-bind="getConfig('cardResource')"></v-text>
+                        <v-text v-if="fields.cardDefense !== ''" :text="fields.cardDefense" v-bind="getConfig('cardDefense')"></v-text>
+                        <v-text v-if="fields.cardPower !== ''" :text="fields.cardPower" v-bind="getConfig('cardPower')"></v-text>
+                        <v-text v-if="fields.cardLife !== ''" :text="fields.cardLife" v-bind="getConfig('cardLife')"></v-text>
+                        <v-text v-if="fields.cardHeroIntellect !== ''" :text="fields.cardHeroIntellect" v-bind="getConfig('cardHeroIntellect')"></v-text>
+                        <v-text
+                            :text="cardTypeText"
+                            v-bind="{...getConfig('cardTypeText'), fontSize: typeTextFontSize}"
+                        ></v-text>
+                      </v-layer>
+                      <v-layer id="footer">
+                        <v-image v-if="fields.cardRarity" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
+                        <template v-if="selectedStyle === 'dented'">
+                          <v-text
+                              v-if="fields.cardArtworkCredits !== ''"
+                              :fontSize="footerTextFontSize"
+                              :text="artworkCreditsText"
+                              v-bind="getConfig('cardArtworkCredits')"
+                          />
+                          <v-text
+                              v-if="fields.cardArtworkCredits !== ''"
+                              :fontSize="footerTextFontSize"
+                              :text="dentedFooterText"
+                              v-bind="getConfig('cardFooterTextCentered')"
+                          />
+                          <v-text
+                              v-if="fields.cardArtworkCredits === ''"
+                              :fontSize="footerTextFontSize"
+                              :text="artworkCreditsText"
+                              v-bind="getConfig('cardFooterText')"
+                          />
+                          <v-text
+                              v-if="fields.cardArtworkCredits !== ''"
+                              text="©"
+                              v-bind="{...getConfig('copyrightOverlayBottom')}"
+                          />
+                          <v-text
+                              v-else
+                              text="©"
+                              v-bind="{...getConfig('copyrightOverlay')}"
+                          />
+                        </template>
+                        <template v-if="selectedStyle === 'flat'">
+                          <template v-if="fields.cardArtworkCredits !== ''">
+                            <v-text
+                                :fontSize="footerTextFontSize"
+                                :text="artworkCreditsText"
+                                v-bind="getConfig('cardFooterText')"
+                            />
+                          </template>
+                          <template v-else>
+                            <v-text
+                                :fontSize="footerTextFontSize"
+                                text="FABKIT  |  NOT TOURNAMENT LEGAL"
+                                v-bind="getConfig('cardFooterText')"
+                            />
+                          </template>
+                          <v-text
+                              :fontSize="footerTextFontSize"
+                              :text="flatFooterText"
+                              v-bind="getConfig('cardFooterTextRight')"
+                          />
+                          <!-- Copyright overlay -->
+                          <v-text
+                              text="©"
+                              v-bind="getConfig('copyrightOverlay')"
+                          />
+                        </template>
+                      </v-layer>
+                    </v-stage>
+                    <div id="renderedCardText" ref="containerElement" :style="cardTextStyle">
+                      <div v-if="fields" id="renderedContent" ref="contentElement" v-html="fields.cardText"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
           </div>
           <div class="flex flex-col gap-3 justify-center mt-2 print:hidden sm:flex-row sm:gap-2">
             <button
@@ -547,8 +551,8 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                 @click="generateAndOpen"
             >
               Generate and Open
-              <ArrowTopRightOnSquareIcon aria-hidden="true" class="-mr-0.5 size-5"/>
-              <svg v-if="downloadingImage" aria-hidden="true" class="w-4 h-4 animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ArrowTopRightOnSquareIcon aria-hidden="true" class="-mr-0.5 size-5" v-if="!downloadingImage"/>
+              <svg v-else aria-hidden="true" class="w-4 h-4 animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#ffffff" fill-opacity="0.3"/>
                 <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="#ffffff"/>
               </svg>
@@ -561,7 +565,11 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                 @click="downloadImage"
             >
               Generate and Save*
-              <DocumentArrowDownIcon aria-hidden="true" class="-mr-0.5 size-5"/>
+              <DocumentArrowDownIcon aria-hidden="true" class="-mr-0.5 size-5" v-if="!downloadingImage"/>
+              <svg v-else aria-hidden="true" class="w-4 h-4 animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#ffffff" fill-opacity="0.3"/>
+                <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="#ffffff"/>
+              </svg>
             </button>
 
             <button
