@@ -761,60 +761,85 @@ export function useCard() {
 
     const {clonedCardParent, tempContainer, exportStage} = getCardParentClone();
 
-    toPng(clonedCardParent, {
+    // iOS-specific settings
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+    const baseOptions = {
       width: sceneWidth,
       canvasWidth: sceneWidth,
       height: sceneHeight,
       canvasHeight: sceneHeight,
       backgroundColor: 'transparent',
       pixelRatio: 1,
-    })
-      .then(callback)
-      .catch((err) => {
-        console.error('Export failed:', err);
-      })
-      .finally(() => {
-        // Cleanup
-        document.body.removeChild(tempContainer);
-        downloadingImage.value = false;
-        exportStage.destroy();
-      });
+    };
+
+    // Add iOS-specific options only when needed
+    const options = isIOS ? {
+      ...baseOptions,
+      cacheBust: true,
+      useCORS: true
+    } : baseOptions;
+
+    const executeExport = () => {
+      toPng(clonedCardParent, options)
+        .then(callback)
+        .catch((err) => {
+          console.error('Export failed:', err);
+        })
+        .finally(() => {
+          // Cleanup
+          document.body.removeChild(tempContainer);
+          downloadingImage.value = false;
+          exportStage.destroy();
+        });
+    };
+
+    // iOS needs more time, others can execute immediately
+    if (isIOS) {
+      setTimeout(executeExport, 500);
+    } else {
+      executeExport();
+    }
   }
 
   const downloadImage = function () {
+
     konvaToPng((dataUrl) => downloadURI(dataUrl, (fields.cardName || 'card') + '.png'));
   };
 
   const generateAndOpen = function () {
+    // iOS-specific detection (same as in konvaToPng)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
     konvaToPng((dataUrl) => {
       const newWindow = window.open();
+
+      // iOS gets clean black background, others keep your existing styling
+      const bodyStyle = isIOS
+        ? 'margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh;'
+        : 'margin: 0; padding: 20px; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 100vh;';
+
+      const imgStyle = isIOS
+        ? 'max-width: 100%; max-height: 100vh; object-fit: contain;'
+        : 'max-width: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border-radius: 8px;';
+
       newWindow.document.write(`
-        <html lang="en">
-            <head>
-                <title>${fields.cardName || 'Generated Card'}</title>
-                <style>
-                    body {
-                        margin: 0;
-                        padding: 20px;
-                        background: #f0f0f0;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        min-height: 100vh;
-                    }
-                    img {
-                        max-width: 100%;
-                        height: auto;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                        border-radius: 8px;
-                    }
-                </style>
-            </head>
-            <body>
-                <img src="${dataUrl}" alt="Generated Card" />
-            </body>
-        </html>
-        `);
+      <html lang="en">
+          <head>
+              <title>${fields.cardName || 'Generated Card'}</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                  body { ${bodyStyle} }
+                  img { ${imgStyle} }
+              </style>
+          </head>
+          <body>
+              <img src="${dataUrl}" alt="Generated Card" />
+          </body>
+      </html>
+      `);
     });
   };
 
