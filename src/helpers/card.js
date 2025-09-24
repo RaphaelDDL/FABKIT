@@ -679,6 +679,7 @@ export function useCard() {
   }
 
   const downloadingImage = ref(false);
+  const generatingAndOpening = ref(false);
 
   const getCardParentClone = function () {
     // Clone the entire card parent structure
@@ -756,8 +757,12 @@ export function useCard() {
     return {clonedCardParent, tempContainer, exportStage};
   }
 
-  const konvaToPng = function (callback) {
-    downloadingImage.value = true;
+  const konvaToPng = function (callback, actionType = 'download') {
+    if (actionType === 'generate') {
+      generatingAndOpening.value = true;
+    } else {
+      downloadingImage.value = true;
+    }
 
     const {clonedCardParent, tempContainer, exportStage} = getCardParentClone();
 
@@ -790,7 +795,11 @@ export function useCard() {
         .finally(() => {
           // Cleanup
           document.body.removeChild(tempContainer);
-          downloadingImage.value = false;
+          if (actionType === 'generate') {
+            generatingAndOpening.value = false;
+          } else {
+            downloadingImage.value = false;
+          }
           exportStage.destroy();
         });
     };
@@ -840,7 +849,7 @@ export function useCard() {
           </body>
       </html>
       `);
-    });
+    }, 'generate');
   };
 
   return {
@@ -874,6 +883,7 @@ export function useCard() {
     downloadImage,
     loadingBackground,
     downloadingImage,
+    generatingAndOpening,
     generateAndOpen,
     sceneWidth,
     sceneHeight,
