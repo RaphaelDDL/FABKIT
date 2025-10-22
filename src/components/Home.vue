@@ -272,7 +272,7 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                         @click="fields.cardRarity = rarity.id"
                         :class="[
                           'h-14 w-14 sm:h-10 sm:w-10 rounded-md border-2 transition-all duration-200 hover:scale-105 focus:outline-none flex items-center justify-center',
-                          fields.cardRarity === rarity.id
+                          (fields.cardRarity === rarity.id) || (!fields.cardRarity && rarity.id === 2)  // Add default check
                             ? 'border-primary bg-primary/10 shadow-lg'
                             : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-dark hover:border-gray-400 dark:hover:border-gray-500'
                         ]"

@@ -92,7 +92,7 @@ const cardSettings = {
                 y: 76,
             },
             cardFooterText: {
-                x: 128.5,
+                x: 130.5,
                 y: 595.9,
                 width: 204,
                 height: 12,

@@ -589,10 +589,6 @@ export function useCard() {
   })
 
   watch(() => fields.cardType, (newCardType) => {
-    if (fields.cardRarity === 0) {
-      fields.cardRarity = 2; // Ensure default rarity is set
-    }
-
     nextTick().then(() => {
       updateSize();
       recalculateRatio();
@@ -603,6 +599,17 @@ export function useCard() {
       recalculateRatio();
     });
     if (!newCardType) return;
+
+    const currentRarity = fields.cardRarity;
+    if (currentRarity === 0 || !currentRarity) {
+      fields.cardRarity = 2;
+    } else {
+      // Force reactivity update
+      fields.cardRarity = 0;
+      nextTick(() => {
+        fields.cardRarity = currentRarity;
+      });
+    }
 
     if (nonDentedTypes.includes(newCardType)) {
       selectedStyle.value = 'flat';
