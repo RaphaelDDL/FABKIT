@@ -334,13 +334,27 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                 </div>
               </div>
               <div v-if="fields.cardType !== ''" class="">
-                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardLife">Artwork credits</label>
+                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardArtworkCredits">Artwork credits</label>
                 <div class="mt-2">
                   <div class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardLife" v-model="fields.cardArtworkCredits"
+                    <input id="cardArtworkCredits" v-model="fields.cardArtworkCredits"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                            type="text"
-                           :maxlength="selectedStyle === 'flat' ? 36 : 34"
+                           :maxlength="selectedStyle === 'flat' ? 36 : 26"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div v-if="fields.cardType !== ''" class="mt-4">
+                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardSetNumber">Set Number</label>
+                <div class="mt-2">
+                  <div class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
+                    <input id="cardSetNumber" v-model="fields.cardSetNumber"
+                           class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
+                           type="text"
+                           maxlength="6"
+                           @input="fields.cardSetNumber = fields.cardSetNumber.toUpperCase()"
+                           placeholder="e.g. MON168"
                     />
                   </div>
                 </div>
@@ -477,39 +491,29 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                         ></v-text>
                       </v-layer>
                       <v-layer id="footer">
-                        <v-image v-if="fields.cardRarity" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
+                        <v-image v-if="fields.cardRarity && cardRarityImage" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
                         <template v-if="selectedStyle === 'dented'">
                           <v-text
-                              v-if="fields.cardArtworkCredits !== ''"
+                              v-if="fields.cardArtworkCredits !== '' || fields.cardSetNumber !== ''"
                               :fontSize="footerTextFontSize"
                               :text="artworkCreditsText"
                               v-bind="getConfig('cardArtworkCredits')"
                           />
                           <v-text
-                              v-if="fields.cardArtworkCredits !== ''"
+                             v-if="fields.cardArtworkCredits !== '' || fields.cardSetNumber !== ''"
                               :fontSize="footerTextFontSize"
                               :text="dentedFooterText"
                               v-bind="getConfig('cardFooterTextCentered')"
                           />
                           <v-text
-                              v-if="fields.cardArtworkCredits === ''"
+                              v-if="fields.cardArtworkCredits === '' && fields.cardSetNumber === ''"
                               :fontSize="footerTextFontSize"
                               :text="artworkCreditsText"
                               v-bind="getConfig('cardFooterText')"
                           />
-                          <v-text
-                              v-if="fields.cardArtworkCredits !== ''"
-                              text="©"
-                              v-bind="{...getConfig('copyrightOverlayBottom')}"
-                          />
-                          <v-text
-                              v-else
-                              text="©"
-                              v-bind="{...getConfig('copyrightOverlay')}"
-                          />
                         </template>
                         <template v-if="selectedStyle === 'flat'">
-                          <template v-if="fields.cardArtworkCredits !== ''">
+                          <template v-if="fields.cardArtworkCredits !== '' || fields.cardSetNumber !== ''">
                             <v-text
                                 :fontSize="footerTextFontSize"
                                 :text="artworkCreditsText"
@@ -527,11 +531,6 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                               :fontSize="footerTextFontSize"
                               :text="flatFooterText"
                               v-bind="getConfig('cardFooterTextRight')"
-                          />
-                          <!-- Copyright overlay -->
-                          <v-text
-                              text="©"
-                              v-bind="getConfig('copyrightOverlay')"
                           />
                         </template>
                       </v-layer>

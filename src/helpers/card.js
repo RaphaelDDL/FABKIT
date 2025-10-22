@@ -30,11 +30,12 @@ export function useCard() {
     cardSubType: '',
     cardMacroGroup: '',
     cardWeapon: '',
-    cardRarity: 0,
+    cardRarity: 2,
     cardDefense: '',
     cardLife: '',
     cardUploadedArtwork: '',
     cardFooterText: '',
+    cardSetNumber: '',
     cardArtworkCredits: '',
   });
   const cardTypeText = computed(() => {
@@ -385,7 +386,9 @@ export function useCard() {
 
   const {cardRarities} = useCardRarities();
   const cardRarityImage = computed(() => {
-    return cardRarities.find(value => value.id === fields.cardRarity).image[0].value;
+    const rarity = cardRarities.find(value => value.id === fields.cardRarity);
+    if (!rarity || !rarity.image[0]?.value) return null;
+    return rarity.image[0].value;
   })
 
 
@@ -407,14 +410,15 @@ export function useCard() {
     if (!fontsLoaded.value) {
       return '';
     }
-    return `FaB TCG BY${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}LSS`;
+    return `FaB TCG BY LSS`;
   });
 
   const dentedFooterText = computed(() => {
     if (!fontsLoaded.value) {
       return '';
     }
-    return `NOT TOURNAMENT LEGAL - FaB TCG BY${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}LSS`;
+    // This is always the second line when there's custom content
+    return 'NOT LEGAL - FLESH AND BLOOD TCG BY LSS';
   });
 
   const artworkCreditsText = computed(() => {
@@ -422,14 +426,24 @@ export function useCard() {
       return '';
     }
     if (selectedStyle.value === 'flat') {
-      if (!fields.cardArtworkCredits) return '';
-      return 'FABKIT | ' + fields.cardArtworkCredits.toUpperCase() + ' | NOT TOURNAMENT LEGAL';
+      if (!fields.cardArtworkCredits && !fields.cardSetNumber) return '';
+
+      let parts = [];
+      if (fields.cardSetNumber) parts.push(fields.cardSetNumber);
+      parts.push('FABKIT');
+      if (fields.cardArtworkCredits) parts.push(fields.cardArtworkCredits.toUpperCase());
+      parts.push('NOT LEGAL');
+      return parts.join(' | ');
     }
-
-    if (!fields.cardArtworkCredits) return 'FABKIT - ' + dentedFooterText.value;
-
-    return `FABKIT - ` + fields.cardArtworkCredits.toUpperCase();
-  })
+    let parts = [];
+    if (fields.cardSetNumber) parts.push(fields.cardSetNumber);
+    parts.push('FABKIT');
+    if (fields.cardArtworkCredits) parts.push(fields.cardArtworkCredits.toUpperCase());
+    if (fields.cardSetNumber || fields.cardArtworkCredits) {
+      return parts.join(' - ');
+    }
+    return 'FABKIT - NOT LEGAL - FLESH AND BLOOD TCG BY LSS';
+  });
 
   const resizeText = ({
                         element,
@@ -575,6 +589,15 @@ export function useCard() {
   })
 
   watch(() => fields.cardType, (newCardType) => {
+    if (fields.cardRarity === 0) {
+      fields.cardRarity = 2; // Ensure default rarity is set
+    }
+
+    nextTick().then(() => {
+      updateSize();
+      recalculateRatio();
+    });
+
     nextTick().then(() => {
       updateSize();
       recalculateRatio();
@@ -631,7 +654,7 @@ export function useCard() {
   };
 
   onMounted(() => {
-    fields.cardRarity = 1;
+    fields.cardRarity = 2;
     canvasHelper.artworkLayer = artwork.value.getStage();
     canvasHelper.backgroundLayer = background.value.getStage();
 

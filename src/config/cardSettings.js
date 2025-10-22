@@ -124,28 +124,6 @@ const cardSettings = {
                 fill: "white",
                 align: "center",
             },
-            copyrightOverlay: {
-                x: 305,  // Position where © appears in the dented footer
-                y: 595.5,
-                width: 10,
-                height: 12,
-                fontFamily: 'Arial',
-                fontSize: 10.43,
-                verticalAlign: "top",
-                fill: "white",
-                align: "center",
-            },
-            copyrightOverlayBottom: {
-                x: 285,  // Position where © appears in the dented footer
-                y: 607.5,
-                width: 10,
-                height: 12,
-                fontFamily: 'Arial',
-                fontSize: 10.43,
-                verticalAlign: "top",
-                fill: "white",
-                align: "center",
-            },
             noResourceImage: {
                 x: 371,
                 y: 29.9,
@@ -417,17 +395,6 @@ const cardSettings = {
                 verticalAlign: "top",
                 fill: "white",
                 align: "right",
-            },
-            copyrightOverlay: {
-                x: 400.7,  // Position where © appears in the dented footer
-                y: 599,
-                width: 10,
-                height: 12,
-                fontFamily: 'Arial',
-                fontSize: 9,
-                verticalAlign: "top",
-                fill: "white",
-                align: "center",
             },
             noResourceImage: {
                 x: 372,  // Adjust these values as needed for flat
