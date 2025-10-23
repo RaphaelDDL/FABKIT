@@ -272,7 +272,7 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                         @click="fields.cardRarity = rarity.id"
                         :class="[
                           'h-14 w-14 sm:h-10 sm:w-10 rounded-md border-2 transition-all duration-200 hover:scale-105 focus:outline-none flex items-center justify-center',
-                          fields.cardRarity === rarity.id
+                          (fields.cardRarity === rarity.id) || (!fields.cardRarity && rarity.id === 2)  // Add default check
                             ? 'border-primary bg-primary/10 shadow-lg'
                             : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-dark hover:border-gray-400 dark:hover:border-gray-500'
                         ]"
@@ -334,13 +334,27 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                 </div>
               </div>
               <div v-if="fields.cardType !== ''" class="">
-                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardLife">Artwork credits</label>
+                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardArtworkCredits">Artwork credits</label>
                 <div class="mt-2">
                   <div class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
-                    <input id="cardLife" v-model="fields.cardArtworkCredits"
+                    <input id="cardArtworkCredits" v-model="fields.cardArtworkCredits"
                            class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
                            type="text"
-                           :maxlength="selectedStyle === 'flat' ? 36 : 34"
+                           :maxlength="selectedStyle === 'flat' ? 36 : 26"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div v-if="fields.cardType !== ''" class="mt-4">
+                <label class="block text-sm/6 font-medium text-primary dark:text-white" for="cardSetNumber">Set Number</label>
+                <div class="mt-2">
+                  <div class="flex items-center rounded-md bg-white dark:bg-dark pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-primary">
+                    <input id="cardSetNumber" v-model="fields.cardSetNumber"
+                           class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-primary dark:text-white placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
+                           type="text"
+                           maxlength="6"
+                           @input="fields.cardSetNumber = fields.cardSetNumber.toUpperCase()"
+                           placeholder="e.g. MON168"
                     />
                   </div>
                 </div>
@@ -477,39 +491,29 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                         ></v-text>
                       </v-layer>
                       <v-layer id="footer">
-                        <v-image v-if="fields.cardRarity" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
+                        <v-image v-if="fields.cardRarity && cardRarityImage" id="cardRarity" :image="cardRarityImage" v-bind="getConfig('cardRarity')"></v-image>
                         <template v-if="selectedStyle === 'dented'">
                           <v-text
-                              v-if="fields.cardArtworkCredits !== ''"
+                              v-if="fields.cardArtworkCredits !== '' || fields.cardSetNumber !== ''"
                               :fontSize="footerTextFontSize"
                               :text="artworkCreditsText"
                               v-bind="getConfig('cardArtworkCredits')"
                           />
                           <v-text
-                              v-if="fields.cardArtworkCredits !== ''"
+                             v-if="fields.cardArtworkCredits !== '' || fields.cardSetNumber !== ''"
                               :fontSize="footerTextFontSize"
                               :text="dentedFooterText"
                               v-bind="getConfig('cardFooterTextCentered')"
                           />
                           <v-text
-                              v-if="fields.cardArtworkCredits === ''"
+                              v-if="fields.cardArtworkCredits === '' && fields.cardSetNumber === ''"
                               :fontSize="footerTextFontSize"
                               :text="artworkCreditsText"
                               v-bind="getConfig('cardFooterText')"
                           />
-                          <v-text
-                              v-if="fields.cardArtworkCredits !== ''"
-                              text="©"
-                              v-bind="{...getConfig('copyrightOverlayBottom')}"
-                          />
-                          <v-text
-                              v-else
-                              text="©"
-                              v-bind="{...getConfig('copyrightOverlay')}"
-                          />
                         </template>
                         <template v-if="selectedStyle === 'flat'">
-                          <template v-if="fields.cardArtworkCredits !== ''">
+                          <template v-if="fields.cardArtworkCredits !== '' || fields.cardSetNumber !== ''">
                             <v-text
                                 :fontSize="footerTextFontSize"
                                 :text="artworkCreditsText"
@@ -528,11 +532,6 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
                               :text="flatFooterText"
                               v-bind="getConfig('cardFooterTextRight')"
                           />
-                          <!-- Copyright overlay -->
-                          <v-text
-                              text="©"
-                              v-bind="getConfig('copyrightOverlay')"
-                          />
                         </template>
                       </v-layer>
                     </v-stage>
@@ -547,11 +546,11 @@ const [lifeImage] = useImage('/img/symbols/cardsymbol_life.svg');
             <button
                 class="inline-flex items-center justify-center gap-x-1.5 button-primary rounded-md px-3.5 py-2.5"
                 type="button"
-                :disabled="downloadingImage"
+                :disabled="generatingAndOpening"
                 @click="generateAndOpen"
             >
               Generate and Open
-              <ArrowTopRightOnSquareIcon aria-hidden="true" class="-mr-0.5 size-5" v-if="!downloadingImage"/>
+              <ArrowTopRightOnSquareIcon aria-hidden="true" class="-mr-0.5 size-5" v-if="!generatingAndOpening"/>
               <svg v-else aria-hidden="true" class="w-4 h-4 animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#ffffff" fill-opacity="0.3"/>
                 <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="#ffffff"/>
