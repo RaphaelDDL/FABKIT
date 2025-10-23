@@ -30,11 +30,12 @@ export function useCard() {
     cardSubType: '',
     cardMacroGroup: '',
     cardWeapon: '',
-    cardRarity: 0,
+    cardRarity: 2,
     cardDefense: '',
     cardLife: '',
     cardUploadedArtwork: '',
     cardFooterText: '',
+    cardSetNumber: '',
     cardArtworkCredits: '',
   });
   const cardTypeText = computed(() => {
@@ -385,7 +386,9 @@ export function useCard() {
 
   const {cardRarities} = useCardRarities();
   const cardRarityImage = computed(() => {
-    return cardRarities.find(value => value.id === fields.cardRarity).image[0].value;
+    const rarity = cardRarities.find(value => value.id === fields.cardRarity);
+    if (!rarity || !rarity.image[0]?.value) return null;
+    return rarity.image[0].value;
   })
 
 
@@ -407,14 +410,15 @@ export function useCard() {
     if (!fontsLoaded.value) {
       return '';
     }
-    return `FaB TCG BY${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}LSS`;
+    return `FaB TCG BY LSS`;
   });
 
   const dentedFooterText = computed(() => {
     if (!fontsLoaded.value) {
       return '';
     }
-    return `NOT TOURNAMENT LEGAL - FaB TCG BY${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}${String.fromCharCode(0x00A0)}LSS`;
+    // This is always the second line when there's custom content
+    return 'NOT LEGAL - FLESH AND BLOOD TCG BY LSS';
   });
 
   const artworkCreditsText = computed(() => {
@@ -422,14 +426,24 @@ export function useCard() {
       return '';
     }
     if (selectedStyle.value === 'flat') {
-      if (!fields.cardArtworkCredits) return '';
-      return 'FABKIT | ' + fields.cardArtworkCredits.toUpperCase() + ' | NOT TOURNAMENT LEGAL';
+      if (!fields.cardArtworkCredits && !fields.cardSetNumber) return '';
+
+      let parts = [];
+      if (fields.cardSetNumber) parts.push(fields.cardSetNumber);
+      parts.push('FABKIT');
+      if (fields.cardArtworkCredits) parts.push(fields.cardArtworkCredits.toUpperCase());
+      parts.push('NOT LEGAL');
+      return parts.join(' | ');
     }
-
-    if (!fields.cardArtworkCredits) return 'FABKIT - ' + dentedFooterText.value;
-
-    return `FABKIT - ` + fields.cardArtworkCredits.toUpperCase();
-  })
+    let parts = [];
+    if (fields.cardSetNumber) parts.push(fields.cardSetNumber);
+    parts.push('FABKIT');
+    if (fields.cardArtworkCredits) parts.push(fields.cardArtworkCredits.toUpperCase());
+    if (fields.cardSetNumber || fields.cardArtworkCredits) {
+      return parts.join(' - ');
+    }
+    return 'FABKIT - NOT LEGAL - FLESH AND BLOOD TCG BY LSS';
+  });
 
   const resizeText = ({
                         element,
@@ -579,7 +593,23 @@ export function useCard() {
       updateSize();
       recalculateRatio();
     });
+
+    nextTick().then(() => {
+      updateSize();
+      recalculateRatio();
+    });
     if (!newCardType) return;
+
+    const currentRarity = fields.cardRarity;
+    if (currentRarity === 0 || !currentRarity) {
+      fields.cardRarity = 2;
+    } else {
+      // Force reactivity update
+      fields.cardRarity = 0;
+      nextTick(() => {
+        fields.cardRarity = currentRarity;
+      });
+    }
 
     if (nonDentedTypes.includes(newCardType)) {
       selectedStyle.value = 'flat';
@@ -631,7 +661,7 @@ export function useCard() {
   };
 
   onMounted(() => {
-    fields.cardRarity = 1;
+    fields.cardRarity = 2;
     canvasHelper.artworkLayer = artwork.value.getStage();
     canvasHelper.backgroundLayer = background.value.getStage();
     canvasHelper.stageLayer = stage.value.getStage();
@@ -680,6 +710,7 @@ export function useCard() {
   }
 
   const downloadingImage = ref(false);
+  const generatingAndOpening = ref(false);
 
   const getCardParentClone = function () {
     // Clone the entire card parent structure
@@ -727,7 +758,7 @@ export function useCard() {
         element: clonedTextContent,
         // Because this will be a normal-sized card
         // Size the minSize to the maxFontSize
-        minSize: frameTypeTextConfig.value.maxFontSize,
+        minSize: frameTypeTextConfig.value.minFontSize,
         maxSize: frameTypeTextConfig.value.maxFontSize,
         step: frameTypeTextConfig.value.step,
         // Also set the scale to one
@@ -757,66 +788,99 @@ export function useCard() {
     return {clonedCardParent, tempContainer, exportStage};
   }
 
-  const konvaToPng = function (callback) {
-    downloadingImage.value = true;
+  const konvaToPng = function (callback, actionType = 'download') {
+    if (actionType === 'generate') {
+      generatingAndOpening.value = true;
+    } else {
+      downloadingImage.value = true;
+    }
 
     const {clonedCardParent, tempContainer, exportStage} = getCardParentClone();
 
-    toPng(clonedCardParent, {
+    // iOS-specific settings
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+    const baseOptions = {
       width: sceneWidth,
       canvasWidth: sceneWidth,
       height: sceneHeight,
       canvasHeight: sceneHeight,
       backgroundColor: 'transparent',
       pixelRatio: 1,
-    })
-      .then(callback)
-      .catch((err) => {
-        console.error('Export failed:', err);
-      })
-      .finally(() => {
-        // Cleanup
-        document.body.removeChild(tempContainer);
-        downloadingImage.value = false;
-        exportStage.destroy();
-      });
+    };
+
+    // Add iOS-specific options only when needed
+    const options = isIOS ? {
+      ...baseOptions,
+      cacheBust: true,
+      useCORS: true
+    } : baseOptions;
+
+    const executeExport = () => {
+      toPng(clonedCardParent, options)
+        .then(callback)
+        .catch((err) => {
+          console.error('Export failed:', err);
+        })
+        .finally(() => {
+          // Cleanup
+          document.body.removeChild(tempContainer);
+          if (actionType === 'generate') {
+            generatingAndOpening.value = false;
+          } else {
+            downloadingImage.value = false;
+          }
+          exportStage.destroy();
+        });
+    };
+
+    // iOS needs more time, others can execute immediately
+    if (isIOS) {
+      setTimeout(executeExport, 500);
+    } else {
+      executeExport();
+    }
   }
 
   const downloadImage = function () {
+
     konvaToPng((dataUrl) => downloadURI(dataUrl, (fields.cardName || 'card') + '.png'));
   };
 
   const generateAndOpen = function () {
+    // iOS-specific detection (same as in konvaToPng)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
     konvaToPng((dataUrl) => {
       const newWindow = window.open();
+
+      // iOS gets clean black background, others keep your existing styling
+      const bodyStyle = isIOS
+        ? 'margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh;'
+        : 'margin: 0; padding: 20px; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 100vh;';
+
+      const imgStyle = isIOS
+        ? 'max-width: 100%; max-height: 100vh; object-fit: contain;'
+        : 'max-width: 100%; height: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border-radius: 8px;';
+
       newWindow.document.write(`
-        <html lang="en">
-            <head>
-                <title>${fields.cardName || 'Generated Card'}</title>
-                <style>
-                    body {
-                        margin: 0;
-                        padding: 20px;
-                        background: #f0f0f0;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        min-height: 100vh;
-                    }
-                    img {
-                        max-width: 100%;
-                        height: auto;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                        border-radius: 8px;
-                    }
-                </style>
-            </head>
-            <body>
-                <img src="${dataUrl}" alt="Generated Card" />
-            </body>
-        </html>
-        `);
-    });
+      <html lang="en">
+          <head>
+              <title>${fields.cardName || 'Generated Card'}</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                  body { ${bodyStyle} }
+                  img { ${imgStyle} }
+              </style>
+          </head>
+          <body>
+              <img src="${dataUrl}" alt="Generated Card" />
+          </body>
+      </html>
+      `);
+    }, 'generate');
   };
 
   return {
@@ -850,6 +914,7 @@ export function useCard() {
     downloadImage,
     loadingBackground,
     downloadingImage,
+    generatingAndOpening,
     generateAndOpen,
     sceneWidth,
     sceneHeight,
