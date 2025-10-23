@@ -92,6 +92,12 @@ const CanvasHelpers = class CanvasHelper {
 
                 img.setAttrs(self.fitArtToCanvas(img.image()));
 
+                // Reset scale and position to initial state
+                // in case someone uploaded > zoomed > removed > uploaded another,
+                // new image would keep zoom as it was which is bad
+                self.artworkLayer.scale({ x: 1, y: 1 });
+                self.artworkLayer.position({ x: 0, y: 0 });
+
                 self.artworkLayer.draggable(true);
                 self.initWheelResize();
             }
