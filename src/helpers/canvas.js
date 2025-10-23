@@ -48,100 +48,33 @@ const CanvasHelpers = class CanvasHelper {
         });
     }
 
-    // function to calculate crop values from source image, its visible size and a crop strategy
-    getCrop(image, size, clipPosition = 'center-middle') {
-        const width = size.width;
-        const height = size.height;
-        const aspectRatio = width / height;
+    fitArtToCanvas(image){
+        const bgW = this.backgroundLayer.width();
+        const bgH = this.backgroundLayer.height();
 
         let newWidth;
         let newHeight;
 
-        const imageRatio = image.width / image.height;
-
-        if (aspectRatio >= imageRatio) {
-            newWidth = image.width;
-            newHeight = image.width / aspectRatio;
+        if (image.width >= image.height) {
+            // Horizontal image: fit width to bgW, scale height maintaining aspect ratio
+            newWidth = bgW;
+            newHeight = bgW * (image.height / image.width);
         } else {
-            newWidth = image.height * aspectRatio;
-            newHeight = image.height;
-        }
-
-        let x = 0;
-        let y = 0;
-        if (clipPosition === 'left-top') {
-            x = 0;
-            y = 0;
-        } else if (clipPosition === 'left-middle') {
-            x = 0;
-            y = (image.height - newHeight) / 2;
-        } else if (clipPosition === 'left-bottom') {
-            x = 0;
-            y = image.height - newHeight;
-        } else if (clipPosition === 'center-top') {
-            x = (image.width - newWidth) / 2;
-            y = 0;
-        } else if (clipPosition === 'center-middle') {
-            x = (image.width - newWidth) / 2;
-            y = (image.height - newHeight) / 2;
-        } else if (clipPosition === 'center-bottom') {
-            x = (image.width - newWidth) / 2;
-            y = image.height - newHeight;
-        } else if (clipPosition === 'right-top') {
-            x = image.width - newWidth;
-            y = 0;
-        } else if (clipPosition === 'right-middle') {
-            x = image.width - newWidth;
-            y = (image.height - newHeight) / 2;
-        } else if (clipPosition === 'right-bottom') {
-            x = image.width - newWidth;
-            y = image.height - newHeight;
-        } else if (clipPosition === 'scale') {
-            x = 0;
-            y = 0;
-            newWidth = width;
-            newHeight = height;
-        } else {
-            console.error(
-                new Error('Unknown clip position property - ' + clipPosition)
-            );
+            // Vertical image: fit height to bgH, scale width maintaining aspect ratio
+            newHeight = bgH;
+            newWidth = bgH * (image.width / image.height);
         }
 
         return {
-            cropX: x,
-            cropY: y,
-            cropWidth: newWidth,
-            cropHeight: newHeight,
-        };
+            width: newWidth,
+            height: newHeight
+        }
     }
 
     drawUploadedArtwork(src, config) {
         const self = this;
 
-        const existing = self.artworkLayer.findOne('.artwork');
-        if (existing && existing.attrs.image.src === src) {
-            if (config.height && existing.attrs.height === config.height) {
-                return;
-            }
-            existing.setAttrs(config);
-            // apply default left-top crop
-            applyCrop('center-middle');
-            return;
-        }
-
         self.artworkLayer.removeChildren();
-
-        // function to apply crop
-        function applyCrop(pos) {
-            const img = self.artworkLayer.findOne('.artwork');
-            img.setAttr('lastCropUsed', pos);
-            const crop = self.getCrop(
-                img.image(),
-                {width: img.width(), height: img.height()},
-                pos
-            );
-            img.setAttrs(crop);
-        }
 
         Konva.Image.fromURL(
             src,
@@ -156,8 +89,9 @@ const CanvasHelpers = class CanvasHelper {
                         }
                     });
                 self.artworkLayer.add(img);
-                // apply default left-top crop
-                applyCrop('center-middle');
+
+                img.setAttrs(self.fitArtToCanvas(img.image()));
+
                 self.artworkLayer.draggable(true);
                 self.initWheelResize();
             }
